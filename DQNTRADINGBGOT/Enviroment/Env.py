@@ -78,11 +78,12 @@ class enviroment():
         else:
             self.position = Positions["flat"]
             return
+
         if self.last_order is not None:
             self.equant=round(self.ballances+self.last_order.calculate_prifit(new_ask=row["ask"], new_bid=row["bid"]),2)
         else:
             self.equant=self.ballances
-        self.reward=0
+
         if action == Actions["buy"]:
             if self.last_order is None:
                 self.last_order=Order(row["ask"], row["bid"], position="long")
@@ -103,7 +104,7 @@ class enviroment():
                 self.reward = -0.1
         if action == Actions["close"]:
             if self.last_order is not None:
-                self.equant = self.ballances + self.last_order.calculate_prifit(new_ask=row["ask"], new_bid=row["bid"])
+                self.equant = round(self.ballances + self.last_order.calculate_prifit(new_ask=row["ask"], new_bid=row["bid"]),2)
                 self.reward = round(self.equant - self.ballances, 2)
                 self.ballances=self.equant
                 self.last_order.close_Position(row["ask"],row["bid"])
@@ -134,24 +135,24 @@ if __name__ == '__main__':
         for index, row in e.scalleDate().iterrows():
             action = agent.act(row)
             reward = e.episode(row, action)
-            agent.observe(state=state, action=action, reward=reward, new_state=row, done=False)
+            agent.observe(state=state, action=action, reward=e.reward, new_state=row, done=False)
             agent.learn()
             state = row
-            reward_sum.append(reward)
+            reward_sum.append(e.reward)
             if e.ballances > higest_ballance:
                 higest_ballance = e.ballances
             if e.ballances <= 0:
                 break
-            print("_____________________________________"
-         "\nepisode :{0} "
-         "\nreward :{1}"
-         "\naction :{2}"
-         "\nbalance :{3}"
-         "\nHigest balance :{4}".format(index,
-         e.reward,
-         (list(Actions.keys())[list(Actions.values()).index(action)]),
-         e.ballances, higest_ballance))
-        print(reward_sum)
+            #print("_____________________________________"
+         #"\nepisode :{0} "
+         #"\nreward :{1}"
+         #"\naction :{2}"
+         #"\nbalance :{3}"
+         #"\nHigest balance :{4}"
+        #"\n EQu: {5}".format(index,
+         #e.reward,
+         #(list(Actions.keys())[list(Actions.values()).index(action)]),
+         #e.ballances, higest_ballance, e.equant))
         print("count: {0} \nbalance: {1} \nreward: {2} \nhigest ballance {3}".format(count, e.ballances, sum(reward_sum),
                                                                                      higest_ballance))
         count += 1
