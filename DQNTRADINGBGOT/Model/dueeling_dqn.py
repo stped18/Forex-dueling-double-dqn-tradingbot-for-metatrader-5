@@ -115,7 +115,7 @@ class ReplayBuffer():
 
 class Agent():
     def __init__(self, lr, gamma, n_actions, epsilon, batch_size, input_dims, epsilon_dec=1e-3, eps_end=0.01,
-                 mem_size=100000, fname="./Enviroment/save/duelingAgent", fc1_dimns=128, fc2_dims=128*2, replace=100):
+                 mem_size=1000000, fname="./Enviroment/save/duelingAgent", fc1_dimns=128, fc2_dims=128*2, replace=100):
         self.action_space = [i for i in range(n_actions)]
         self.gamma = gamma
         self.epsilon = epsilon

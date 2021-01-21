@@ -4,7 +4,8 @@ from sklearn import preprocessing
 from Model.dueeling_dqn import Agent
 import pandas_ta as ta
 from Enviroment.Order import Order
-
+from datetime import datetime
+import pytz
 Actions = {
     'hold': 0,
     'buy': 1,
@@ -31,7 +32,11 @@ class enviroment():
         self.mt = mt5
         self.mt.initialize(path=self.path)
         self.lot = 0.03
+
+        # create 'datetime' objects in UTC time zone to avoid the implementation of a local time zone offset
+
         self.data = self.getData(self.symbol)
+
         self.oldClose = 0
         self.equant=0
         self.position = Positions["flat"]
@@ -42,15 +47,17 @@ class enviroment():
         self.last_order = None
         self.order_action = 0
         self.ballances = 100
+        self.max_profit=0
+        self.max_loss=0
 
 
 
-    def getData(self, Symbol):
-        dataset = self.mt.copy_rates_from_pos(Symbol, self.mt.TIMEFRAME_M1, 0, 500)
+    def getData(self, Symbol, ):
+
+
+        dataset = self.mt.copy_rates_from_pos(Symbol, self.mt.TIMEFRAME_M1, 0, 1440*7)
         dataset = pd.DataFrame(dataset)
         dataset = dataset.rename(columns={'tick_volume': 'volume'})
-
-        # To run your "Custom Strategy"
         dataset.ta.strategy(ta.AllStrategy)
         dataset.drop("time", inplace=True, axis=1)
         dataset.fillna(0.0)
@@ -80,7 +87,7 @@ class enviroment():
             return
 
         if self.last_order is not None:
-            self.equant=round(self.ballances+self.last_order.calculate_prifit(new_ask=row["ask"], new_bid=row["bid"]),2)
+            self.equant=self.ballances+self.last_order.calculate_prifit(new_ask=row["ask"], new_bid=row["bid"])
         else:
             self.equant=self.ballances
 
@@ -93,19 +100,23 @@ class enviroment():
                 self.reward = -1.0
         if action == Actions["sell"]:
             if self.last_order is None:
-                self.last_order = Order(row["ask"], row["bid"], position="bid")
+                self.last_order = Order(row["ask"], row["bid"], position="short")
                 self.reward=1
             else:
                 self.reward = -1.0
         if action == Actions["hold"]:
             if self.last_order is None:
-                self.reward =round(self.equant-self.ballances,2)
+                self.reward =self.equant-self.ballances
             else:
                 self.reward = -0.1
         if action == Actions["close"]:
             if self.last_order is not None:
-                self.equant = round(self.ballances + self.last_order.calculate_prifit(new_ask=row["ask"], new_bid=row["bid"]),2)
-                self.reward = round(self.equant - self.ballances, 2)
+                self.equant = self.ballances + self.last_order.calculate_prifit(new_ask=row["ask"], new_bid=row["bid"])
+                self.reward = self.equant - self.ballances
+                if self.reward>self.max_profit:
+                    self.max_profit=self.reward
+                if self.reward<self.max_loss:
+                    self.max_loss=self.reward
                 self.ballances=self.equant
                 self.last_order.close_Position(row["ask"],row["bid"])
                 self.last_order=None
@@ -121,17 +132,17 @@ if __name__ == '__main__':
     e = enviroment()
     data = e.scalleDate()
     state = data.iloc[0]
-    agent = Agent(n_actions=4, batch_size=32, epsilon=1.00, input_dims=[len(state)], lr=0.001, gamma=0.95)
+    agent = Agent(n_actions=4, batch_size=32, epsilon=1.00, input_dims=[len(state)], lr=0.01, gamma=0.95)
     count = 0
     reward_sum =[]
     action = 0
     brainisCreatet = True
-
+    agent.load_model()
     for i in range(1000):
         e.ballances = 100
         higest_ballance = 0.0
         reward_sum = []
-        # agent.load_model()
+
         for index, row in e.scalleDate().iterrows():
             action = agent.act(row)
             reward = e.episode(row, action)
@@ -153,7 +164,7 @@ if __name__ == '__main__':
          #e.reward,
          #(list(Actions.keys())[list(Actions.values()).index(action)]),
          #e.ballances, higest_ballance, e.equant))
-        print("count: {0} \nbalance: {1} \nreward: {2} \nhigest ballance {3}".format(count, e.ballances, sum(reward_sum),
-                                                                                     higest_ballance))
+        print("count: {0} \nbalance: {1} \nreward: {2} \nhigest ballance {3}\nMax_lose : {4}n\Max_profit : {5}".format(count, e.ballances, sum(reward_sum),
+                                                                                     higest_ballance, e.max_loss, e.max_profit))
         count += 1
         agent.save_model()
