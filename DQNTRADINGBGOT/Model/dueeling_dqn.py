@@ -25,7 +25,7 @@ class DuelingDeepQNetWork(keras.Sequential):
         self.dense_x2 = keras.layers.Dense(fc1_dims*4, activation=activation)
         self.dense_x3 = keras.layers.Dense(fc1_dims*4, activation=activation)
 
-        self.lstm_x1 = keras.layers.Dense(fc1_dims*4, activation="relu")
+        self.lstm_x1 = keras.layers.Dense(fc1_dims*4, activation=activation)
         self.lstm_x2 = keras.layers.Dense(fc1_dims*4, activation="sigmoid")
         self.lstm_x3 = keras.layers.Dense(fc1_dims*4, activation="sigmoid")
         self.lstm_x4 = keras.layers.Dense(fc1_dims*4, activation="tanh")
