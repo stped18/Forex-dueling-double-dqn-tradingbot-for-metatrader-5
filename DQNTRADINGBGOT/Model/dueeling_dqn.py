@@ -98,7 +98,7 @@ class ReplayBuffer():
         self.new_state_memory[index] = new_state
         self.actions_memory[index] = action
         self.reward_memory[index] = reward
-        self.reward_memory[index] = done
+        self.terminal_memory[index] = done
         self.mem_cntr += 1
 
     def sample_buffer(self, batch_size):

@@ -49,6 +49,8 @@ class enviroment():
         self.ballances = 100
         self.max_profit=0
         self.max_loss=0
+        self.num_loss=0
+        self.num_wins=0
 
 
 
@@ -117,6 +119,10 @@ class enviroment():
                     self.max_profit=self.reward
                 if self.reward<self.max_loss:
                     self.max_loss=self.reward
+                if self.reward<0:
+                    self.num_loss += 1
+                if self.reward>0:
+                    self.num_wins += 1
                 self.ballances=self.equant
                 self.last_order.close_Position(row["ask"],row["bid"])
                 self.last_order=None
@@ -136,6 +142,7 @@ if __name__ == '__main__':
     count = 0
     reward_sum =[]
     action = 0
+    dataset = e.scalleDate()
     brainisCreatet = True
     agent.load_model()
     for i in range(1000):
@@ -143,10 +150,13 @@ if __name__ == '__main__':
         higest_ballance = 0.0
         reward_sum = []
 
-        for index, row in e.scalleDate().iterrows():
+        for index, row in dataset.iterrows():
             action = agent.act(row)
             reward = e.episode(row, action)
-            agent.observe(state=state, action=action, reward=e.reward, new_state=row, done=False)
+            if index == dataset.index[-1]:
+                agent.observe(state=state, action=action, reward=e.reward, new_state=row, done=True)
+            else:
+                agent.observe(state=state, action=action, reward=e.reward, new_state=row, done=False)
             agent.learn()
             state = row
             reward_sum.append(e.reward)
@@ -164,7 +174,13 @@ if __name__ == '__main__':
          #e.reward,
          #(list(Actions.keys())[list(Actions.values()).index(action)]),
          #e.ballances, higest_ballance, e.equant))
-        print("count: {0} \nbalance: {1} \nreward: {2} \nhigest ballance {3}\nMax_lose : {4}n\Max_profit : {5}".format(count, e.ballances, sum(reward_sum),
-                                                                                     higest_ballance, e.max_loss, e.max_profit))
+        print("Count: {0} \n"
+              "Balance: {1} \n"
+              "Reward: {2} \n"
+              "Higest ballance {3}\n"
+              "Max_lose: {4}\n"
+              "Max_profit: {5}\n"
+              "Number of losses: {6}\n"
+              "Number of wins: {7}".format(count, e.ballances, sum(reward_sum), higest_ballance, e.max_loss, e.max_profit, e.num_loss, e.num_wins))
         count += 1
         agent.save_model()
