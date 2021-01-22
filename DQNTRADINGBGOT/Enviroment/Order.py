@@ -11,9 +11,9 @@ class Order(object):
 
     def calculate_prifit(self, new_ask, new_bid):
         if self.position=="long":
-            self.profit= new_bid-self.ask
+            self.profit= (new_bid-self.ask)*100
         if self.position=="short":
-            self.profit=new_ask-self.bid
+            self.profit=(new_ask-self.bid)*100
         return self.profit
 
     def close_Position(self, new_ask, new_bid ):
