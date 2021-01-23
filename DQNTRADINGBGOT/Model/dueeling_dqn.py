@@ -225,5 +225,10 @@ class Agent():
         self.memory.reward_memory= self.memory.load_transition("reward_memory")
         self.memory.terminal_memory=self.memory.load_transition("done_memory")
 
-
+    def load_Transaction(self):
+        self.memory.state_memory = self.memory.load_transition("state_memory")
+        self.memory.new_state_memory = self.memory.load_transition("new_state_memory")
+        self.memory.actions_memory = self.memory.load_transition("action_memory")
+        self.memory.reward_memory = self.memory.load_transition("reward_memory")
+        self.memory.terminal_memory = self.memory.load_transition("done_memory")
 
