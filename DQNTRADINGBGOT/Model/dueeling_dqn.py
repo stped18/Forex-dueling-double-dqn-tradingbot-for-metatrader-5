@@ -212,7 +212,14 @@ class Agent():
         self.memory.save_Transition("action_memory", self.memory.actions_memory)
         self.memory.save_Transition("reward_memory", self.memory.reward_memory)
         self.memory.save_Transition("done_memory", self.memory.terminal_memory)
+        self.save_transaction()
 
+    def save_transaction(self):
+        self.memory.save_Transition("state_memory", self.memory.state_memory)
+        self.memory.save_Transition("new_state_memory", self.memory.state_memory)
+        self.memory.save_Transition("action_memory", self.memory.actions_memory)
+        self.memory.save_Transition("reward_memory", self.memory.reward_memory)
+        self.memory.save_Transition("done_memory", self.memory.terminal_memory)
 
 
     def load_model(self):
