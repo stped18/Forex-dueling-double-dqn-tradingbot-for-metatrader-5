@@ -1,5 +1,7 @@
 import pickle
-
+import os.path
+import io
+from os import path
 import tensorflow as tf
 import tensorflow.keras as keras
 from tensorflow.keras.optimizers import Adam
@@ -19,38 +21,55 @@ class DuelingDeepQNetWork(keras.Sequential):
         super(DuelingDeepQNetWork, self).__init__()
         activation = 'relu'
         self.dense_x1 = keras.layers.Dense(fc1_dims, activation=activation)
-        self.dense_x11 = keras.layers.Dense(fc1_dims*2, activation=activation)
-        self.dense_x12 = keras.layers.Dense(fc1_dims*2, activation=activation)
-        self.dense_x13 = keras.layers.Dense(fc1_dims*2, activation=activation)
-        self.dense_x2 = keras.layers.Dense(fc1_dims*4, activation=activation)
-        self.dense_x3 = keras.layers.Dense(fc1_dims*4, activation=activation)
+        self.dense_x11 = keras.layers.Dense(fc1_dims, activation=activation)
+        self.dense_x12 = keras.layers.Dense(fc1_dims, activation=activation)
+        self.dense_x13 = keras.layers.Dense(fc1_dims, activation=activation)
+        self.dense_x2 = keras.layers.Dense(fc1_dims, activation=activation)
+        self.dense_x3 = keras.layers.Dense(fc1_dims, activation=activation)
+        self.dense_x4 = keras.layers.Dense(fc1_dims, activation=activation)
+        self.dense_x5 = keras.layers.Dense(fc1_dims, activation=activation)
 
-        self.lstm_x1 = keras.layers.Dense(fc1_dims*4, activation=activation)
-        self.lstm_x2 = keras.layers.Dense(fc1_dims*4, activation="sigmoid")
-        self.lstm_x3 = keras.layers.Dense(fc1_dims*4, activation="sigmoid")
-        self.lstm_x4 = keras.layers.Dense(fc1_dims*4, activation="tanh")
-        self.lstm_x5 = keras.layers.Dense(fc1_dims*2, activation="sigmoid")
+        self.lstm_x1 = keras.layers.Dense(fc1_dims, activation=activation)
+        self.lstm_x2 = keras.layers.Dense(fc1_dims, activation="sigmoid")
+        self.lstm_x3 = keras.layers.Dense(fc1_dims, activation="sigmoid")
+        self.lstm_x4 = keras.layers.Dense(fc1_dims, activation="tanh")
+        self.lstm_x5 = keras.layers.Dense(fc1_dims, activation="sigmoid")
 
+        self.lstm_y1 = keras.layers.Dense(fc2_dims, activation=activation)
+        self.lstm_y2 = keras.layers.Dense(fc2_dims, activation="sigmoid")
+        self.lstm_y3 = keras.layers.Dense(fc2_dims, activation="sigmoid")
+        self.lstm_y4 = keras.layers.Dense(fc2_dims, activation="tanh")
+        self.lstm_y5 = keras.layers.Dense(fc2_dims, activation="sigmoid")
 
-        self.dense_y1 = keras.layers.Dense(fc2_dims*4, activation=activation)
-        self.dense_y2 = keras.layers.Dense(fc2_dims*4, activation=activation)
-        self.dense_y3 = keras.layers.Dense(fc2_dims*4, activation=activation)
+        self.dense_y1 = keras.layers.Dense(fc2_dims, activation=activation)
+        self.dense_y2 = keras.layers.Dense(fc2_dims, activation=activation)
+        self.dense_y3 = keras.layers.Dense(fc2_dims, activation=activation)
         self.V = keras.layers.Dense(1, activation=None)
         self.A = keras.layers.Dense(n_actions, activation=None)
 
     def call(self, state):
         x = self.dense_x1(state)
+        ly = self.lstm_y1(x)
         lx = self.lstm_x1(x)
+
         x= self.dense_x11(x)
         x= self.dense_x12(x)
         x= self.dense_x13(x)
+
         lx = self.lstm_x2(lx)
         lx = self.lstm_x3(lx)
         lx = self.lstm_x4(lx)
-        lx = self.lstm_x5(lx)
-        cc1 = Concatenate(axis=-1)([x, lx])
+
+        ly=self.lstm_y2(ly)
+        ly=self.lstm_y3(ly)
+        ly=self.lstm_y4(ly)
+        ly=self.lstm_y5(ly)
+
+        cc1 = Concatenate(axis=-1)([x, lx, ly])
         x = self.dense_x2(cc1)
         x = self.dense_x3(x)
+        x = self.dense_x4(x)
+        x = self.dense_x5(x)
         x = self.dense_y1(x)
         x = self.dense_y2(x)
         x = self.dense_y3(x)
@@ -63,16 +82,26 @@ class DuelingDeepQNetWork(keras.Sequential):
     def advantages(self, state):
         x = self.dense_x1(state)
         lx = self.lstm_x1(x)
-        lx = self.lstm_x2(lx)
+        ly = self.lstm_y1(x)
         x = self.dense_x11(x)
         x = self.dense_x12(x)
         x = self.dense_x13(x)
+
+        lx = self.lstm_x2(lx)
         lx = self.lstm_x3(lx)
         lx = self.lstm_x4(lx)
-        lx = self.lstm_x5(lx)
-        cc1 = Concatenate(axis=-1)([x, lx])
+
+
+        ly = self.lstm_y2(ly)
+        ly = self.lstm_y3(ly)
+        ly = self.lstm_y4(ly)
+        ly = self.lstm_y5(ly)
+
+        cc1 = Concatenate(axis=-1)([x, lx, ly])
         x = self.dense_x2(cc1)
         x = self.dense_x3(x)
+        x = self.dense_x4(x)
+        x = self.dense_x5(x)
         x = self.dense_y1(x)
         x = self.dense_y2(x)
         x = self.dense_y3(x)
@@ -85,7 +114,7 @@ class ReplayBuffer():
     def __init__(self, max_sixe, input_Shape):
         self.mem_size = max_sixe
         self.mem_cntr = 0
-
+        self.input_Shape = input_Shape
         self.state_memory = np.zeros((self.mem_size, *input_Shape), dtype=np.float32)
         self.new_state_memory = np.zeros((self.mem_size, *input_Shape), dtype=np.float32)
         self.actions_memory = np.zeros(self.mem_size, dtype=np.int32)
@@ -101,6 +130,8 @@ class ReplayBuffer():
         self.terminal_memory[index] = done
         self.mem_cntr += 1
 
+
+
     def sample_buffer(self, batch_size):
         max_men = min(self.mem_cntr, self.mem_size)
         batch = np.random.choice(max_men, batch_size, replace=True)
@@ -109,13 +140,12 @@ class ReplayBuffer():
         actions = self.actions_memory[batch]
         rewards = self.reward_memory[batch]
         dones = self.terminal_memory[batch]
-
         return states, actions, rewards, new_states, dones
 
 
 class Agent():
     def __init__(self, lr, gamma, n_actions, epsilon, batch_size, input_dims, epsilon_dec=1e-3, eps_end=0.01,
-                 mem_size=1000000, fname="./Enviroment/save/duelingAgent", fc1_dimns=128, fc2_dims=128*2, replace=100):
+                 mem_size=1000000, fname="duelingAgent", fc1_dimns=128, fc2_dims=128*2, replace=100):
         self.action_space = [i for i in range(n_actions)]
         self.gamma = gamma
         self.epsilon = epsilon
@@ -125,12 +155,12 @@ class Agent():
         self.batch_size = batch_size
         self.replace = replace
         self.learn_step_counter = 0
-        self.memory = ReplayBuffer(mem_size, input_dims)
-        self.q_evale = DuelingDeepQNetWork(fc1_dims=fc1_dimns, fc2_dims=fc2_dims, n_actions=n_actions)
-        self.q_next = DuelingDeepQNetWork(fc1_dims=fc1_dimns, fc2_dims=fc2_dims, n_actions=n_actions)
+        self.memory = ReplayBuffer(mem_size, [input_dims])
+        print(self.memory.__sizeof__())
+        self.q_evale = DuelingDeepQNetWork(fc1_dims=input_dims*2, fc2_dims=input_dims*4, n_actions=n_actions)
+        self.q_next = DuelingDeepQNetWork(fc1_dims=input_dims*2, fc2_dims=input_dims*4, n_actions=n_actions)
         self.q_evale.compile(optimizer=Adam(learning_rate=lr), loss="mean_squared_error")
         self.q_next.compile(optimizer=Adam(learning_rate=lr), loss="mean_squared_error")
-
 
 
     def observe(self, state, action, reward, new_state, done):
@@ -143,6 +173,7 @@ class Agent():
             state = np.array([observation])
             actions = self.q_evale.advantages(state)
             action = tf.math.argmax(actions, axis=1).numpy()[0]
+
         return action
 
     def learn(self):
@@ -164,10 +195,14 @@ class Agent():
         self.learn_step_counter += 1
 
     def save_model(self):
-        self.q_evale.save_weights(self.fname)
+        self.q_evale.save_weights("./save/q_evale/"+self.fname+"_q_evale")
+        self.q_next.save_weights("./save/q_next/"+self.fname+"_q_next")
 
 
 
     def load_model(self):
-        self.q_evale.load_weights(self.fname)
+        self.q_evale.load_weights("./save/q_evale/"+self.fname+"_q_evale")
+        self.q_next.load_weights("./save/q_next/"+self.fname+"_q_next")
+
+
 
