@@ -207,11 +207,6 @@ class Agent():
         print("saving model")
         self.q_evale.save_weights("./save/q_evale/"+self.fname+"_q_evale")
         self.q_next.save_weights("./save/q_next/"+self.fname+"_q_next")
-        self.memory.save_Transition("state_memory", self.memory.state_memory)
-        self.memory.save_Transition("new_state_memory", self.memory.state_memory)
-        self.memory.save_Transition("action_memory", self.memory.actions_memory)
-        self.memory.save_Transition("reward_memory", self.memory.reward_memory)
-        self.memory.save_Transition("done_memory", self.memory.terminal_memory)
         self.save_transaction()
 
     def save_transaction(self):
