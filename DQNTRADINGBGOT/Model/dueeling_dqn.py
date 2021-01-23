@@ -215,5 +215,10 @@ class Agent():
         self.q_evale.load_weights("./save/q_evale/"+self.fname+"_q_evale")
         self.q_next.load_weights("./save/q_next/"+self.fname+"_q_next")
 
-
+    def load_Transaction(self):
+        self.memory.state_memory = self.memory.load_transition("state_memory")
+        self.memory.new_state_memory = self.memory.load_transition("new_state_memory")
+        self.memory.actions_memory = self.memory.load_transition("action_memory")
+        self.memory.reward_memory = self.memory.load_transition("reward_memory")
+        self.memory.terminal_memory = self.memory.load_transition("done_memory")
 
