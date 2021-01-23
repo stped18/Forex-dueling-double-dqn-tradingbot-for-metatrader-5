@@ -204,6 +204,7 @@ class Agent():
         self.learn_step_counter += 1
 
     def save_model(self):
+        print("saving model")
         self.q_evale.save_weights("./save/q_evale/"+self.fname+"_q_evale")
         self.q_next.save_weights("./save/q_next/"+self.fname+"_q_next")
         self.memory.save_Transition("state_memory", self.memory.state_memory)
@@ -215,6 +216,7 @@ class Agent():
 
 
     def load_model(self):
+        print("load model")
         self.q_evale.load_weights("./save/q_evale/"+self.fname+"_q_evale")
         self.q_next.load_weights("./save/q_next/"+self.fname+"_q_next")
         self.memory.state_memory=self.memory.load_transition("state_memory")
