@@ -214,6 +214,7 @@ class Agent():
         print("load model")
         self.q_evale.load_weights("./save/q_evale/"+self.fname+"_q_evale")
         self.q_next.load_weights("./save/q_next/"+self.fname+"_q_next")
+        self.load_Transaction()
 
     def load_Transaction(self):
         self.memory.state_memory = self.memory.load_transition("state_memory")
