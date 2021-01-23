@@ -130,6 +130,15 @@ class ReplayBuffer():
         self.terminal_memory[index] = done
         self.mem_cntr += 1
 
+    def save_Transition(self, filename, data_list):
+        print("saving transaction {0}".format(filename))
+        file_path ="./Memory/"+filename+".txt"
+        data_list.tofile(file_path, sep=',', format='%10.5f')
+    def load_transition(self, filename):
+        print("loading Transaction {0}".format(filename))
+        file_path = "./Memory/" + filename + ".txt"
+        if path.exists(file_path):
+            return np.genfromtxt(file_path, delimiter=',')
 
 
     def sample_buffer(self, batch_size):
