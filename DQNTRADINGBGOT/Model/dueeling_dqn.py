@@ -8,7 +8,6 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import load_model, save_model
 import numpy as np
 from tensorflow.python.keras.layers import Concatenate
-import csv
 
 
 class modelStore(object):
@@ -141,6 +140,7 @@ class ReplayBuffer():
         if path.exists(file_path):
             return np.genfromtxt(file_path, delimiter=',')
 
+
     def sample_buffer(self, batch_size):
         max_men = min(self.mem_cntr, self.mem_size)
         batch = np.random.choice(max_men, batch_size, replace=True)
@@ -226,11 +226,7 @@ class Agent():
         print("load model")
         self.q_evale.load_weights("./save/q_evale/"+self.fname+"_q_evale")
         self.q_next.load_weights("./save/q_next/"+self.fname+"_q_next")
-        self.memory.state_memory=self.memory.load_transition("state_memory")
-        self.memory.new_state_memory=self.memory.load_transition("new_state_memory")
-        self.memory.actions_memory= self.memory.load_transition("action_memory")
-        self.memory.reward_memory= self.memory.load_transition("reward_memory")
-        self.memory.terminal_memory=self.memory.load_transition("done_memory")
+        self.load_Transaction()
 
     def load_Transaction(self):
         self.memory.state_memory = self.memory.load_transition("state_memory")
