@@ -52,7 +52,7 @@ class enviroment():
         self.num_orders=0
 
     def getData(self, Symbol):
-        dataset = self.mt.copy_rates_from_pos(Symbol, self.mt.TIMEFRAME_M1, 0, 500)
+        dataset = self.mt.copy_rates_from_pos(Symbol, self.mt.TIMEFRAME_M1, 0, (1440*20))
         dataset = pd.DataFrame(dataset)
         dataset = dataset.rename(columns={'tick_volume': 'volume'})
         dataset.ta.strategy(ta.AllStrategy)
