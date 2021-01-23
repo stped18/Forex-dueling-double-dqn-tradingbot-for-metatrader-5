@@ -8,6 +8,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.models import load_model, save_model
 import numpy as np
 from tensorflow.python.keras.layers import Concatenate
+import csv
 
 
 class modelStore(object):
@@ -130,7 +131,13 @@ class ReplayBuffer():
         self.terminal_memory[index] = done
         self.mem_cntr += 1
 
-
+    def save_Transition(self, filename, data_list):
+        file_path ="./Memory/"+filename+".txt"
+        data_list.tofile(file_path, sep=',', format='%10.5f')
+    def load_transition(self, filename):
+        file_path = "./Memory/" + filename + ".txt"
+        if path.exists(file_path):
+            return np.genfromtxt(file_path, delimiter=',')
 
     def sample_buffer(self, batch_size):
         max_men = min(self.mem_cntr, self.mem_size)
@@ -197,12 +204,22 @@ class Agent():
     def save_model(self):
         self.q_evale.save_weights("./save/q_evale/"+self.fname+"_q_evale")
         self.q_next.save_weights("./save/q_next/"+self.fname+"_q_next")
+        self.memory.save_Transition("state_memory", self.memory.state_memory)
+        self.memory.save_Transition("new_state_memory", self.memory.state_memory)
+        self.memory.save_Transition("action_memory", self.memory.actions_memory)
+        self.memory.save_Transition("reward_memory", self.memory.reward_memory)
+        self.memory.save_Transition("done_memory", self.memory.terminal_memory)
 
 
 
     def load_model(self):
         self.q_evale.load_weights("./save/q_evale/"+self.fname+"_q_evale")
         self.q_next.load_weights("./save/q_next/"+self.fname+"_q_next")
+        self.memory.state_memory=self.memory.load_transition("state_memory")
+        self.memory.new_state_memory=self.memory.load_transition("new_state_memory")
+        self.memory.actions_memory= self.memory.load_transition("action_memory")
+        self.memory.reward_memory= self.memory.load_transition("reward_memory")
+        self.memory.terminal_memory=self.memory.load_transition("done_memory")
 
 
 
