@@ -168,13 +168,14 @@ class Agent():
                 action_probality = tfp.distributions.Categorical(probs=probs)
                 action = action_probality.sample()
                 action=action.numpy()[0]
-                (unique, counts) = np.unique(action, return_counts=True)
-                frequencies = np.asarray((unique, counts)).T
-                action=frequencies[0][0]
+                #(unique, counts) = np.unique(action, return_counts=True)
+                #frequencies = np.asarray((unique, counts)).T
+                #action=frequencies[0][0]
                 action_list.append(action)
-        (unique, counts) = np.unique(action_list, return_counts=True)
-        frequencies = np.asarray((unique, counts)).T
-        action = frequencies[0][0]
+        #(unique, counts) = np.unique(action_list, return_counts=True)
+        #frequencies = np.asarray((unique, counts)).T
+        #print(frequencies)
+        action = np.bincount(action_list).argmax()
         return action
 
     def DQN_learn(self):
