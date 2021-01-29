@@ -8,7 +8,9 @@ if __name__=="__main__":
     state = data.iloc[0]
     agent = Agent(n_actions=6, batch_size=64, epsilon=1.00, input_dims=len(state), lr=0.0005, gamma=0.99)
     while True:
+        print("Starter")
         for index, row in data.iterrows():
+
             state=env.Update(state)
             action = agent.act(state)
             reward=env.episode(action=action, observation=state)
@@ -17,7 +19,6 @@ if __name__=="__main__":
             agent.DQN_learn()
             if index%60==0:
                 agent.PG_learn()
-            print("ballance :{0} equent :{1} Profir :{2} .reward {3}, action {4} ".format(env.acount.balance, env.acount.equant,env.acount.profit, reward, action))
             if env.acount.balance<0:
                 agent.observe(state=state, action=action, reward=reward, new_state=row, done=True)
                 agent.DQN_learn()
@@ -29,3 +30,4 @@ if __name__=="__main__":
         agent.observe(state=state, action=action, reward=reward, new_state=row, done=True)
         agent.DQN_learn()
         agent.save_model()
+        env.reset()

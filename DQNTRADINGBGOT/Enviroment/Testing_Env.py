@@ -76,6 +76,10 @@ class Enviroment():
         self.mt.initialize(path=self.path)
         self.Testing_Data=None
 
+    def reset(self):
+        self.acount = Acount(balance=100, lot=0.01)
+        self.symbol = "EURUSD"
+
     def getData(self):
         dataset = self.mt.copy_rates_from_pos(self.symbol, self.mt.TIMEFRAME_M1, 0, 99999)
         dataset = pd.DataFrame(dataset)
@@ -144,7 +148,7 @@ class Enviroment():
                 return-0.5
 
         else:
-            return 0.001
+            return -0.01
 
     def Action_Close(self, current_price):
         if len(self.acount.History)!=0 and self.acount.History[-1].alive :
