@@ -21,8 +21,8 @@ class PolicyGradiensNetwork(keras.Model):
 
     def call(self, state):
         value = self.fc1(state)
-        value = self.fc2(state)
-        value = self.fc3(state)
+        value = self.fc2(value)
+        value = self.fc3(value)
         value = self.fc4(value)
         output = self.outputLayer(value)
         return output
