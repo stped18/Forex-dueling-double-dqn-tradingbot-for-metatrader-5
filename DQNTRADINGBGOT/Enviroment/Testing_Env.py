@@ -71,7 +71,7 @@ class Acount():
 
 
 class Enviroment():
-    def __init__(self, symbol, balance=100):
+    def __init__(self, symbol, balance=1000.0):
         self.acount = Acount(balance=balance, lot=0.01)
         self.symbol = symbol
         self.path = "C:/Program Files/MetaTrader 5/terminal64.exe"
@@ -85,9 +85,8 @@ class Enviroment():
         self.symbol = "EURUSD"
 
     def getData(self):
-        dataset = self.mt.copy_rates_from_pos(self.symbol, self.mt.TIMEFRAME_M1, 0, (1440)+500)
+        dataset = self.mt.copy_rates_from_pos(self.symbol, self.mt.TIMEFRAME_M1, 0, (1440*10)+500)
         dataset = pd.DataFrame(dataset)
-        print(dataset)
         dataset = dataset.rename(columns={'tick_volume': 'volume'})
         dataset.ta.strategy(ta.AllStrategy)
         dataset.drop("time", inplace=True, axis=1)
@@ -102,33 +101,25 @@ class Enviroment():
         min_max_scaler = preprocessing.MinMaxScaler((-1, 1))
         np_scaled = min_max_scaler.fit_transform(self.Testing_Data)
         df_normalized = pd.DataFrame(np_scaled)
-        #df_normalized['bid'] =0
-        #df_normalized['ask'] = 0
-        #df_normalized['open'] = 0
-        df_normalized['price'] = self.Testing_Data["close"]
-        df_normalized["eqn"] = 0
-        df_normalized["balance"] = 0
-        df_normalized["account_profit"] = 0
-        df_normalized["is_order_placed"] = 0
         df_normalized = df_normalized.iloc[500:]
         return df_normalized
 
-    def Update(self ,observation):
-
+    def Update(self, index):
+        acount_state={"balance": [self.acount.balance],
+                     "equent": [self.acount.balance],
+                     "is_order_placed":[0.0],
+                     "profit":[0.0]}
         if len(self.acount.History) != 0:
             if self.acount.History[-1].alive:
-                observation["is_order_placed"] = 1
-                observation["account_profit"] = self.acount.History[-1].Get_Profit(current_price=observation["price"])
+                acount_state["is_order_placed"]=[1]
+                acount_state["profit"] = [self.acount.History[-1].Get_Profit(current_price=self.Testing_Data["close"].iloc[index])]
+                acount_state["equent"]=[self.acount.Get_equant(self.Testing_Data["close"].iloc[index])]
             else:
-                observation["account_profit"] =0
-                observation["is_order_placed"] = 0
-            self.acount.Get_equant(observation["price"])
+                acount_state["is_order_placed"]=[0]
 
-        #observation['bid'] = 0
-        #observation['ask'] = 0
-        observation["eqn"] = self.acount.equant
-        observation["balance"] = self.acount.balance
-        return observation
+        data = pd.DataFrame.from_dict(acount_state)
+        return data
+
 
     def Action_Buy(self, buy_price):
         if len(self.acount.History)!=0 and self.acount.History[-1].alive:
@@ -147,42 +138,42 @@ class Enviroment():
     def Action_Hold(self, current_price):
         if len(self.acount.History)!=0 and self.acount.History[-1].alive:
             re = self.acount.History[-1].Get_Profit(current_price=current_price)
-            return round(re,2)
+            return round(re,4)
         else:
-            return -1
+            return -0.01
 
     def Action_Close(self, current_price):
         if len(self.acount.History)!=0 and self.acount.History[-1].alive :
             self.acount.Close_order(current_price)
             re=self.acount.History[-1].profit_loss
-            return round(re,2)
+            return round(re,4)
 
         else:
             return -1
 
 
-    def episode(self, action, observation):
+    def episode(self, action, observation, index):
         if len(self.acount.History)!=0:
-            self.acount.Get_equant(observation["price"])
+            self.acount.Get_equant(self.Testing_Data["close"].iloc[index])
         #if action == 1:
             #reward = self.Action_Buy(observation["price"])
         #elif action == 2:
             #reward = self.Action_Sell(observation["price"])
         if action == 0:
-            reward = self.Action_Hold(observation["price"])
+            reward = self.Action_Hold(self.Testing_Data["close"].iloc[index])
         #elif action == 3:
             #reward = self.Action_Close(observation["price"])
         elif action == 1:
-            reward = self.Action_Close(observation["price"])
+            reward = self.Action_Close(self.Testing_Data["close"].iloc[index])
             self.positions_total = self.mt.positions_total()
-            reward = self.Action_Sell(observation["price"]) + reward
+            reward = self.Action_Sell(self.Testing_Data["close"].iloc[index]) + reward
         elif action == 2:
-            reward = self.Action_Close(observation["price"])
+            reward = self.Action_Close(self.Testing_Data["close"].iloc[index])
             self.positions_total = self.mt.positions_total()
-            reward = self.Action_Buy(observation["price"]) + reward
+            reward = self.Action_Buy(self.Testing_Data["close"].iloc[index]) + reward
         else:
             reward = -0.1
-        self.old_position_price=observation["price"]
+        self.old_position_price=self.Testing_Data["close"].iloc[index]
         return reward
 
 
