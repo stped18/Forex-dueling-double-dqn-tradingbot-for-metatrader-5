@@ -76,6 +76,7 @@ class Enviroment():
         self.symbol = symbol
         self.path = "C:/Program Files/MetaTrader 5/terminal64.exe"
         self.mt = mt5
+
         self.mt.initialize(path=self.path)
         self.Testing_Data=None
         self.old_position_price=0

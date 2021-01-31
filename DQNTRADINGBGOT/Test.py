@@ -30,12 +30,15 @@ if __name__=="__main__":
     agent1 = Agent(n_actions=3, batch_size=64, epsilon=1.00, input_dims=len(data1), lr=0.003, gamma=0.98, acount_dims=len(acount_state.iloc[0]))
     agent2 = Agent(n_actions=3, batch_size=64, epsilon=1.00, input_dims=len(data1), lr=0.003, gamma=0.98, acount_dims=len(acount_state.iloc[0]))
     agent3 = Agent(n_actions=3, batch_size=64, epsilon=1.00, input_dims=len(data1), lr=0.003, gamma=0.98, acount_dims=len(acount_state.iloc[0]))
+    agent1.load_model()
+    agent2.load_model()
+    agent3.load_model()
     reward_list1=[]
     reward_list2=[]
     reward_list3=[]
     count=0
     while True:
-        #agent1 = agent1.load_model()
+
         print("starter loop")
         for index, row in data.iterrows():
 
@@ -72,20 +75,20 @@ if __name__=="__main__":
 
                 if resum1>resum2 and resum1> resum3:
                     agent1.save_model()
-                    print("higest reward agent1 = {0}".format(resum1))
+                    print("higest reward agent1 = {0} balance ={0}".format(resum1, env1.acount.balance))
                 if resum2>resum1 and resum2> resum3:
                     agent2.save_model()
-                    print("higest reward agent2 = {0}".format(resum2))
+                    print("higest reward agent2 = {0} balance ={0}".format(resum2, env3.acount.balance))
                 if resum3>resum1 and resum3> resum2:
                     agent3.save_model()
-                    print("higest reward agent3 = {0}".format(resum3))
+                    print("higest reward agent3 = {0} balance ={0}".format(resum3, env3.acount.balance))
                 reward_list1 = []
                 reward_list2 = []
                 reward_list3 = []
                 time.sleep(5)
-                agent1 = agent1.load_model()
-                agent2 = agent2.load_model()
-                agent3 = agent3.load_model()
+                agent1.load_model()
+                agent2.load_model()
+                agent3.load_model()
                 count=0
             else:
                 agent1.observe(state=state1, action=action1, reward=reward1, new_state=new_state1, done=False)

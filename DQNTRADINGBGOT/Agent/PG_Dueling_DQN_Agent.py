@@ -125,7 +125,7 @@ class DuelingDeepQNetWork(keras.Sequential):
         acount_value = self.acount_Layer2(acount_value)
         acount_value = self.acount_Layer3(acount_value)
 
-        prediction_value = self.predictions_layer1(state)
+        prediction_value = self.predictions_layer1(positionState)
         prediction_value = self.predictions_layer2(prediction_value)
         prediction_value = self.predictions_layer3(prediction_value)
 
@@ -207,7 +207,7 @@ class Agent(object):
         self.q_evale = DuelingDeepQNetWork(acount_dims=acount_dims,fc1_dims=self.input_dims, fc2_dims=self.input_dims2, n_actions=n_actions)
         self.q_next = DuelingDeepQNetWork(acount_dims=acount_dims, fc1_dims=self.input_dims, fc2_dims=self.input_dims2, n_actions=n_actions)
         self.policy = PolicyGradiensNetwork(acount_dims=acount_dims,n_actions=n_actions, fc1_dims=self.input_dims, fc2_dims=self.input_dims2)
-        self.policy.compile(optimizer=Adam(lr=lr), loss="mean_squared_error")
+        self.policy.compile(optimizer=Adam(lr=lr))
         self.q_evale.compile(optimizer=Adam(learning_rate=lr), loss="mean_squared_error")
         self.q_next.compile(optimizer=Adam(learning_rate=lr), loss="mean_squared_error")
 
@@ -290,9 +290,9 @@ class Agent(object):
 
     def save_model(self):
         print("saving model")
-        self.q_evale.save_weights("E:/Trading_Model/" + self.fname + "_q_evale.h5")
-        self.q_next.save_weights("E:/Trading_Model/" + self.fname + "_q_next.h5")
-        self.policy.save_weights("E:/Trading_Model/" + self.fname + "_PG.h5")
+        self.q_evale.save_weights("E:/Trading_Model/Models/" + self.fname + "_q_evale")
+        self.q_next.save_weights("E:/Trading_Model/Models/" + self.fname + "_q_next")
+        self.policy.save_weights("E:/Trading_Model/Models/" + self.fname + "_PG")
         #self.save_transaction()
 
     def save_transaction(self):
@@ -305,9 +305,9 @@ class Agent(object):
 
     def load_model(self):
         print("load model")
-        self.q_evale.load_weights("E:/Trading_Model/" + self.fname + "_q_evale.h5")
-        self.q_next.load_weights("E:/Trading_Model/" + self.fname + "_q_next.h5")
-        self.policy.load_weights("E:/Trading_Model/" + self.fname + "_PG.h5")
+        self.q_evale.load_weights("E:/Trading_Model/Models/" + self.fname + "_q_evale")
+        self.q_next.load_weights("E:/Trading_Model/Models/" + self.fname + "_q_next")
+        self.policy.load_weights("E:/Trading_Model/Models/" + self.fname + "_PG")
         #self.load_Transaction()
 
     def load_Transaction(self):
