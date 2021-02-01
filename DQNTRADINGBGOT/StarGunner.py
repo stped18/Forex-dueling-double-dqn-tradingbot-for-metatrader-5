@@ -18,12 +18,12 @@ if __name__ == '__main__':
         new_obsavation, reward, done, info = env.step(action)
         agent.observe(state=list(observation), reward=reward, action=action, new_state=list(new_obsavation), done=False)
         observation=new_obsavation
-        agent.DQN_learn()
+        agent.Short_term_learning()
         # env.render()
         if done:
             print("info:", info)
             agent.observe(state=observation, reward=reward, action=action, new_state=new_obsavation, done=True)
-            agent.PG_learn()
+            agent.Long_term_Learning()
             break
 
     plt.cla()

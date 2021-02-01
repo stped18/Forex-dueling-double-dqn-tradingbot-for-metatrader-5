@@ -3,101 +3,74 @@ import MetaTrader5 as mt
 from Enviroment.Testing_Env import Enviroment
 from Agent.PG_Dueling_DQN_Agent import Agent
 import pandas as pd
+import uuid
 from sklearn import preprocessing
 
 if __name__=="__main__":
-    env1 = Enviroment(symbol="EURUSD", balance=100000)
-    env2 = Enviroment(symbol="EURUSD", balance=100000)
-    env3 = Enviroment(symbol="EURUSD", balance=100000)
-    data= env1.scalleDate()
-    data= env2.scalleDate()
-    data= env3.scalleDate()
-    data = data.iloc[500:]
-    data1 = data.iloc[0]
-    data2 = data.iloc[0]
-    data3 = data.iloc[0]
-    acount_state = {"balance": [env1.acount.balance],
-                    "equent": [env1.acount.balance],
-                    "is_order_placed": [0],
-                    "profit": [0]}
+    number_af_agent_to_train=10
+    list_Env=[None] * number_af_agent_to_train
+    list_Agents=[None] * number_af_agent_to_train
+    list_reward=[None] * number_af_agent_to_train
+    actions_list=[None] * number_af_agent_to_train
+    acount_states=[None] * number_af_agent_to_train
+    reward_lists = [None] * number_af_agent_to_train
+    state_list=[None] * number_af_agent_to_train
+    new_state_list=[None] * number_af_agent_to_train
+    reward_sum_list=[None] * number_af_agent_to_train
+    for i in range(len(list_Env)):
+        list_Env[i]=Enviroment(symbol="EURUSD", balance=100000)
+        list_Env[i].scalleDate()
+        acountstates ={"balance": [list_Env[i].acount.balance],
+                            "equent": [list_Env[i].acount.balance],
+                            "profit": [list_Env[i].acount.profit],
+                            "is_order_placed": [0]}
 
-    acount_state = pd.DataFrame.from_dict(acount_state)
-    state1=[data1, acount_state]
-    state2=[data2, acount_state]
-    state3=[data3, acount_state]
-    #agent = Agent(n_actions=3, batch_size=64, epsilon=1.00, input_dims=len(state1), lr=0.003, gamma=0.98)
-    #agent.load_model()
-    agent1 = Agent(n_actions=3, batch_size=64, epsilon=1.00, input_dims=len(data1), lr=0.003, gamma=0.98, acount_dims=len(acount_state.iloc[0]))
-    agent2 = Agent(n_actions=3, batch_size=64, epsilon=1.00, input_dims=len(data1), lr=0.003, gamma=0.98, acount_dims=len(acount_state.iloc[0]))
-    agent3 = Agent(n_actions=3, batch_size=64, epsilon=1.00, input_dims=len(data1), lr=0.003, gamma=0.98, acount_dims=len(acount_state.iloc[0]))
-    agent1.load_model()
-    agent2.load_model()
-    agent3.load_model()
-    reward_list1=[]
-    reward_list2=[]
-    reward_list3=[]
+        data = list_Env[i].scalleDate()
+        data = data.iloc[0]
+        acountstates= pd.DataFrame.from_dict(acountstates)
+        state_list[i] = [data, acountstates]
+        list_Agents[i]=Agent(n_actions=6, batch_size=64, epsilon=1.00, input_dims=len(data), lr=0.003, gamma=0.98, acount_dims=len(acountstates.iloc[0]))
+        list_Agents[i].id_nr="AGENT NR {0}".format(i)
+        reward_lists[i]=[]
+
+
+
     count=0
     while True:
 
         print("starter loop")
-        for index, row in data.iterrows():
+        for index, row in list_Env[0].scalleDate().iterrows():
 
-            action1 = agent1.step(state1)
-            action2 = agent2.step(state2)
-            action3 = agent3.step(state3)
-            reward1=env1.episode(action=action1, observation=state1, index=index)
-            reward2=env2.episode(action=action2, observation=state2, index=index)
-            reward3=env3.episode(action=action3, observation=state3, index=index)
-            reward_list1.append(reward1)
-            reward_list2.append(reward2)
-            reward_list3.append(reward3)
-            acountState1 = env1.Update(index)
-            acountState2 = env2.Update(index)
-            acountState3 = env3.Update(index)
-
-            new_state1 = [row, acountState1]
-            new_state2 = [row, acountState1]
-            new_state3 = [row, acountState1]
+            for i in range(len(list_Agents)):
+                actions_list[i]=list_Agents[i].step(state_list[i])
+                reward_lists[i].append(list_Env[i].episode(action=actions_list[i], observation=state_list[i], index=index))
+                print("agent id {4} reward : {0} balance :{1} action :{2} at {3}".format(reward_lists[i][-1], list_Env[i].acount.balance, actions_list[i], i, list_Agents[i].id_nr))
+                acount_states[i] = list_Env[i].Update(index)
+                new_state_list[i] = [row, acount_states[i]]
 
             if count==120:
-                agent1.observe(state=state1, action=action1, reward=reward1, new_state=new_state1, done=True)
-                agent2.observe(state=state2, action=action2, reward=reward2, new_state=new_state2, done=True)
-                agent3.observe(state=state3, action=action3, reward=reward3, new_state=new_state3, done=True)
-                agent1.PG_learn()
-                agent2.PG_learn()
-                agent3.PG_learn()
-                agent1.DQN_learn()
-                agent2.DQN_learn()
-                agent3.DQN_learn()
-                resum1=sum(reward_list1)
-                resum2=sum(reward_list2)
-                resum3=sum(reward_list3)
+                for i in range(len(list_Agents)):
+                    list_Agents[i].observe(state=state_list[i], action=actions_list[i], reward=reward_lists[i][-1], new_state=new_state_list[i], done=True)
+                    list_Agents[i].Long_term_Learning()
+                    list_Agents[i].Short_term_learning()
+                    reward_sum_list[i]=sum(reward_lists[i])
 
-                if resum1>resum2 and resum1> resum3:
-                    agent1.save_model()
-                    print("higest reward agent1 = {0} balance ={0}".format(resum1, env1.acount.balance))
-                if resum2>resum1 and resum2> resum3:
-                    agent2.save_model()
-                    print("higest reward agent2 = {0} balance ={0}".format(resum2, env3.acount.balance))
-                if resum3>resum1 and resum3> resum2:
-                    agent3.save_model()
-                    print("higest reward agent3 = {0} balance ={0}".format(resum3, env3.acount.balance))
-                reward_list1 = []
-                reward_list2 = []
-                reward_list3 = []
+                m = max(reward_sum_list)
+                list_Agents[m].save_model()
+
+                print("higest reward agent = {0} balance ={1} reward: (2)".format( list_Agents[m].id_nr, list_Env[m].acount.balance, reward_sum_list[m]))
+                for i in range(len(list_Agents)):
+                    reward_sum_list[i]=[]
                 time.sleep(5)
-                agent1.load_model()
-                agent2.load_model()
-                agent3.load_model()
+                for i in range(len(list_Agents)):
+                    list_Agents[i].load_model()
                 count=0
             else:
-                agent1.observe(state=state1, action=action1, reward=reward1, new_state=new_state1, done=False)
-                agent2.observe(state=state2, action=action2, reward=reward2, new_state=new_state2, done=False)
-                agent3.observe(state=state3, action=action3, reward=reward3, new_state=new_state3, done=False)
-            state1 = new_state1
-            state2 = new_state2
-            state3 = new_state3
+                for i in range(len(list_Agents)):
+                    list_Agents[i].observe(state=state_list[i], action=actions_list[i], reward=reward_lists[i][-1], new_state=new_state_list[i], done=False)
+                    state_list[i]=new_state_list[i]
+
+
             count+=1
-        env1.reset()
-        env2.reset()
-        env3.reset()
+        for i in range(len(list_Agents)):
+            list_Env[i].reset()

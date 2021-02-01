@@ -27,8 +27,8 @@ class Order():
         self.start_price=start_price
         self.close_price=0
         self.profit_loss=0
-        self.lot=lot
-        self.units=1000
+        self.lot=0.01
+        self.units=10000
         self.ordertype=ordertype
         self.alive=True
 
@@ -63,7 +63,7 @@ class Acount():
     def Close_order(self, closePrice):
         order = self.History[-1]
         order.Close_order(closePrice)
-        self.balance+=order.profit_loss
+        self.balance += order.profit_loss
 
     def Get_equant(self, current_price ):
         self.equant=self.balance+self.History[-1].Get_Profit(current_price=current_price)
@@ -123,31 +123,31 @@ class Enviroment():
 
 
     def Action_Buy(self, buy_price):
-        if len(self.acount.History)!=0 and self.acount.History[-1].alive:
+        if not len(self.acount.History) == 0 and self.acount.History[-1].alive:
             return -1
         else:
             self.acount.Add_order(ordertype="long", startprice=buy_price)
             return 1
 
     def Action_Sell(self, sell_price):
-        if len(self.acount.History)!=0 and self.acount.History[-1].alive :
+        if not len(self.acount.History) == 0 and self.acount.History[-1].alive :
             return -1
         else:
             self.acount.Add_order(ordertype="short", startprice=sell_price)
             return 1
 
     def Action_Hold(self, current_price):
-        if len(self.acount.History)!=0 and self.acount.History[-1].alive:
+        if not len(self.acount.History) == 0 and self.acount.History[-1].alive:
             re = self.acount.History[-1].Get_Profit(current_price=current_price)
-            return round(re,4)
+            return round(re,2)
         else:
             return -0.01
 
     def Action_Close(self, current_price):
-        if len(self.acount.History)!=0 and self.acount.History[-1].alive :
+        if not len(self.acount.History) == 0 and self.acount.History[-1].alive :
             self.acount.Close_order(current_price)
             re=self.acount.History[-1].profit_loss
-            return round(re,4)
+            return round(re,2)*2
 
         else:
             return -1
@@ -156,24 +156,23 @@ class Enviroment():
     def episode(self, action, observation, index):
         if len(self.acount.History)!=0:
             self.acount.Get_equant(self.Testing_Data["close"].iloc[index])
-        #if action == 1:
-            #reward = self.Action_Buy(observation["price"])
-        #elif action == 2:
-            #reward = self.Action_Sell(observation["price"])
+        if action == 4:
+            reward = self.Action_Buy(self.Testing_Data["close"].iloc[index])
+        if action == 5:
+            reward = self.Action_Sell(self.Testing_Data["close"].iloc[index])
         if action == 0:
             reward = self.Action_Hold(self.Testing_Data["close"].iloc[index])
-        #elif action == 3:
-            #reward = self.Action_Close(observation["price"])
-        elif action == 1:
+        if action == 3:
+            reward = self.Action_Close(self.Testing_Data["close"].iloc[index])
+        if action == 1:
             reward = self.Action_Close(self.Testing_Data["close"].iloc[index])
             self.positions_total = self.mt.positions_total()
             reward = self.Action_Sell(self.Testing_Data["close"].iloc[index]) + reward
-        elif action == 2:
+        if action == 2:
             reward = self.Action_Close(self.Testing_Data["close"].iloc[index])
             self.positions_total = self.mt.positions_total()
             reward = self.Action_Buy(self.Testing_Data["close"].iloc[index]) + reward
-        else:
-            reward = -0.1
+
         self.old_position_price=self.Testing_Data["close"].iloc[index]
         return reward
 

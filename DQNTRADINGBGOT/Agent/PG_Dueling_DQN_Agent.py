@@ -10,14 +10,14 @@ import tensorflow_probability as tfp
 import numpy as np
 from tensorflow.python.keras.layers import Add
 from tensorflow.python.keras.models import Sequential
-
+import uuid
 
 
     
 
-class PolicyGradiensNetwork(keras.Model):
+class LongTermNetwork(keras.Model):
     def __init__(self, acount_dims, n_actions, fc1_dims=256, fc2_dims=256 ):
-        super(PolicyGradiensNetwork, self).__init__()
+        super(LongTermNetwork, self).__init__()
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
         self.n_actions = n_actions
@@ -188,6 +188,7 @@ class ReplayBuffer():
 class Agent(object):
     def __init__(self, lr, gamma, n_actions, epsilon, batch_size, input_dims, epsilon_dec=1e-3, eps_end=0.01,
                  mem_size=10000, fname="duelingAgent", fc1_dimns=128, fc2_dims=128 * 2, replace=100, acount_dims=10):
+        self.id_nr=""
         self.action_space = [i for i in range(n_actions)]
         self.gamma = gamma
         self.epsilon = epsilon
@@ -206,10 +207,10 @@ class Agent(object):
         self.memory = ReplayBuffer(mem_size, [input_dims], [acount_dims])
         self.q_evale = DuelingDeepQNetWork(acount_dims=acount_dims,fc1_dims=self.input_dims, fc2_dims=self.input_dims2, n_actions=n_actions)
         self.q_next = DuelingDeepQNetWork(acount_dims=acount_dims, fc1_dims=self.input_dims, fc2_dims=self.input_dims2, n_actions=n_actions)
-        self.policy = PolicyGradiensNetwork(acount_dims=acount_dims,n_actions=n_actions, fc1_dims=self.input_dims, fc2_dims=self.input_dims2)
-        self.policy.compile(optimizer=Adam(lr=lr))
+        self.Long_term_part = LongTermNetwork(acount_dims=acount_dims, n_actions=n_actions, fc1_dims=self.input_dims, fc2_dims=self.input_dims2)
         self.q_evale.compile(optimizer=Adam(learning_rate=lr), loss="mean_squared_error")
         self.q_next.compile(optimizer=Adam(learning_rate=lr), loss="mean_squared_error")
+        self.Long_term_part.compile(optimizer=Adam(learning_rate=lr))
 
     def observe(self, state, action, reward, new_state, done):
         self.memory.store_transition(state, action, reward, new_state, done)
@@ -234,7 +235,7 @@ class Agent(object):
             else:
                 state = tf.convert_to_tensor([observation[0]], dtype=tf.float32)
                 acount_state = tf.convert_to_tensor([observation[1].iloc[0]], dtype=tf.float32)
-                probs = self.policy([state,acount_state])
+                probs = self.Long_term_part([state, acount_state])
                 action_probality = tfp.distributions.Categorical(probs=probs)
                 action = action_probality.sample()
                 action = action.numpy()[0]
@@ -242,7 +243,7 @@ class Agent(object):
         action = np.bincount(action_list).argmax()
         return action
 
-    def DQN_learn(self):
+    def Short_term_learning(self):
         if self.memory.mem_cntr < self.batch_size:
             return
         if self.learn_step_counter % self.replace == 0:
@@ -260,7 +261,7 @@ class Agent(object):
         self.epsilon = self.epsilon - self.eps_dec if self.epsilon > self.eps_end else self.eps_end
         self.learn_step_counter += 1
 
-    def PG_learn(self):
+    def Long_term_Learning(self):
         action = tf.convert_to_tensor(self.action_memory, dtype=tf.float32)
         reward = tf.convert_to_tensor(self.reward_memory, dtype=tf.float32)
 
@@ -278,12 +279,12 @@ class Agent(object):
             for idx, (g, state) in enumerate(zip(G, self.state_memory)):
                 the_state = tf.convert_to_tensor([state[0]], dtype=tf.float32)
                 acount_state = tf.convert_to_tensor([state[1]], dtype=tf.float32)
-                probs = self.policy([the_state, acount_state])
+                probs = self.Long_term_part([the_state, acount_state])
                 actuion_probability = tfp.distributions.Categorical(probs=probs)
                 log_prob = actuion_probability.log_prob(action[idx])
                 loss += -g * tf.squeeze(log_prob)
-        gradient = tape.gradient(loss, self.policy.trainable_variables)
-        self.policy.optimizer.apply_gradients(zip(gradient, self.policy.trainable_variables))
+        gradient = tape.gradient(loss, self.Long_term_part.trainable_variables)
+        self.Long_term_part.optimizer.apply_gradients(zip(gradient, self.Long_term_part.trainable_variables))
         self.state_memory = []
         self.action_memory = []
         self.reward_memory = []
@@ -292,7 +293,7 @@ class Agent(object):
         print("saving model")
         self.q_evale.save_weights("E:/Trading_Model/Models/" + self.fname + "_q_evale")
         self.q_next.save_weights("E:/Trading_Model/Models/" + self.fname + "_q_next")
-        self.policy.save_weights("E:/Trading_Model/Models/" + self.fname + "_PG")
+        self.Long_term_part.save_weights("E:/Trading_Model/Models/" + self.fname + "_PG")
         #self.save_transaction()
 
     def save_transaction(self):
@@ -307,7 +308,7 @@ class Agent(object):
         print("load model")
         self.q_evale.load_weights("E:/Trading_Model/Models/" + self.fname + "_q_evale")
         self.q_next.load_weights("E:/Trading_Model/Models/" + self.fname + "_q_next")
-        self.policy.load_weights("E:/Trading_Model/Models/" + self.fname + "_PG")
+        self.Long_term_part.load_weights("E:/Trading_Model/Models/" + self.fname + "_PG")
         #self.load_Transaction()
 
     def load_Transaction(self):
