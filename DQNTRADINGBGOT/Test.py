@@ -33,7 +33,8 @@ if __name__ == "__main__":
                                acount_dims=len(acountstates.iloc[0]))
         list_Agents[i].id_nr = "AGENT NR {0}".format(i)
         reward_lists[i] = []
-
+    for i in range(len(list_Agents)):
+        list_Agents[i].load_model()
     count = 0
     while True:
 
@@ -44,27 +45,30 @@ if __name__ == "__main__":
                 actions_list[i] = list_Agents[i].step(state_list[i])
                 reward_lists[i].append(
                     list_Env[i].episode(action=actions_list[i], observation=state_list[i], index=index))
-                print("agent id {4} reward : {0} balance :{1} action :{2} at {3}".format(reward_lists[i][-1],
-                                                                                         list_Env[i].acount.balance,
-                                                                                         actions_list[i], i,
-                                                                                         list_Agents[i].id_nr))
+                #print("agent id {4} reward : {0} balance :{1} action :{2} at {3}".format(reward_lists[i][-1],
+                #                                                                         list_Env[i].acount.balance,
+                #                                                                         actions_list[i], i,
+                #                                                                         list_Agents[i].id_nr))
                 acount_states[i] = list_Env[i].Update(index)
                 new_state_list[i] = [row, acount_states[i]]
 
-            if count == 60:
+            if count == 1440/4:
                 for i in range(len(list_Agents)):
                     list_Agents[i].observe(state=state_list[i], action=actions_list[i], reward=reward_lists[i][-1],
                                            new_state=new_state_list[i], done=True)
                     list_Agents[i].Long_term_Learning()
                     list_Agents[i].Short_term_learning()
                     reward_sum_list[i] = sum(reward_lists[i])
+                for i in range(len(reward_lists)):
+                    print(i)
 
                 m = max(reward_sum_list)
                 agent_index = reward_sum_list.index(m)
                 list_Agents[agent_index].save_model()
-                print("higest reward agent = {0} balance ={1} reward: (2)".format(list_Agents[agent_index].id_nr,
+                print("higest reward agent = {0} balance ={1} reward: {2}  order nr : {3}".format(list_Agents[agent_index].id_nr,
                                                                                   list_Env[agent_index].acount.balance,
-                                                                                  reward_sum_list[agent_index]))
+                                                                                  m,len(list_Env[agent_index].acount.History) ))
+                print()
                 for i in range(len(list_Agents)):
                     reward_sum_list[i] = []
                 time.sleep(5)
