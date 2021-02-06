@@ -26,9 +26,9 @@ class LongTermNetwork(keras.Model):
         self.acount_Layer2 = Dense(self.fc1_dims, activation=activation)
         self.acount_Layer3 = Dense(self.fc1_dims, activation=activation)
 
-        self.predictions_layer1=Dense(self.fc1_dims, activation="hard_sigmoid")
-        self.predictions_layer2=Dense(self.fc1_dims, activation="hard_sigmoid")
-        self.predictions_layer3=Dense(self.fc1_dims, activation="hard_sigmoid")
+        self.predictions_layer1=Dense(self.fc1_dims, activation="sigmoid")
+        self.predictions_layer2=Dense(self.fc1_dims, activation="sigmoid")
+        self.predictions_layer3=Dense(self.fc1_dims, activation="sigmoid")
 
         self.fc1 = Dense(self.fc1_dims, activation=activation)
         self.fc2 = Dense(self.fc1_dims, activation=activation)
@@ -74,9 +74,9 @@ class DuelingDeepQNetWork(keras.Sequential):
         self.acount_Layer2 = Dense(self.fc1_dims, activation=activation, name="acount_Layer2")
         self.acount_Layer3 = Dense(self.fc1_dims, activation=activation, name="acount_Layer2")
 
-        self.predictions_layer1 = Dense(self.fc1_dims, activation="hard_sigmoid", name="predictions_layer1")
-        self.predictions_layer2 = Dense(self.fc1_dims, activation="hard_sigmoid",name="predictions_layer2")
-        self.predictions_layer3 = Dense(self.fc1_dims, activation="hard_sigmoid",name="predictions_layer3")
+        self.predictions_layer1 = Dense(self.fc1_dims, activation="sigmoid", name="predictions_layer1")
+        self.predictions_layer2 = Dense(self.fc1_dims, activation="sigmoid",name="predictions_layer2")
+        self.predictions_layer3 = Dense(self.fc1_dims, activation="sigmoid",name="predictions_layer3")
 
         self.fc1 = Dense(self.fc1_dims, activation=activation)
         self.fc2 = Dense(self.fc1_dims, activation=activation)
