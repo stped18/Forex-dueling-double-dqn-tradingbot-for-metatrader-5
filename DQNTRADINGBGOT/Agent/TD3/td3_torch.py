@@ -12,8 +12,8 @@ class Agent():
             layer2_size=300, batch_size=100, noise=0.1):
         self.gamma = gamma
         self.tau = tau
-        self.max_action = [1]*n_actions
-        self.min_action = [-1]*n_actions
+        self.max_action = [100]
+        self.min_action = [-100]
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
         self.batch_size = batch_size
         self.learn_step_cntr = 0
@@ -51,10 +51,10 @@ class Agent():
         if self.time_step < self.warmup:
             mu = T.tensor(np.random.normal(scale=self.noise, size=(self.n_actions,))).to(self.actor.device)
         else:
-            state = T.tensor(observation, dtype=T.float32 ).to(self.actor.device)
+            state = T.tensor(observation, dtype=T.float ).to(self.actor.device)
             mu = self.actor.forward(state).to(self.actor.device)
         mu_prime = mu + T.tensor(np.random.normal(scale=self.noise),
-                                 dtype=T.float32 ).to(self.actor.device)
+                                 dtype=T.float).to(self.actor.device)
         mu_prime = T.clamp(mu_prime, self.min_action[0], self.max_action[0])
         self.time_step += 1
         return mu_prime.cpu().detach().numpy()
@@ -68,11 +68,11 @@ class Agent():
         state, action, reward, new_state, done = \
                 self.memory.sample_buffer(self.batch_size)
 
-        reward = T.tensor(reward, dtype=T.float32 ).to(self.critic_1.device)
+        reward = T.tensor(reward, dtype=T.float ).to(self.critic_1.device)
         done = T.tensor(done).to(self.critic_1.device)
-        state_ = T.tensor(new_state, dtype=T.float32 ).to(self.critic_1.device)
-        state = T.tensor(state, dtype=T.float32 ).to(self.critic_1.device)
-        action = T.tensor(action, dtype=T.float32 ).to(self.critic_1.device)
+        state_ = T.tensor(new_state, dtype=T.float ).to(self.critic_1.device)
+        state = T.tensor(state, dtype=T.float ).to(self.critic_1.device)
+        action = T.tensor(action, dtype=T.float ).to(self.critic_1.device)
 
         target_actions = self.target_actor.forward(state_)
         target_actions = target_actions + \

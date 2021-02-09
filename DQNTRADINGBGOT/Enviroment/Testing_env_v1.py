@@ -3,7 +3,7 @@ import pandas as pd
 from sklearn import preprocessing
 import pandas_ta as ta
 
-from Agent.TD3.td3_torch import Agent
+from Agent.DDPG.ddpg_torch import Agent
 
 
 class Order(object):
@@ -87,29 +87,12 @@ class Enviroment(object):
                 {"kind": "ao"},
                 {"kind": "mom"},
                 {"kind": "adx"},
-                {"kind": "adosc"},
-                {"kind": "pvt"},
                 {"kind": "stoch"},
-                {"kind": "fwma"},
                 {"kind": "stochrsi"},
                 {"kind": "willr"},
-                {"kind": "bop"},
-                {"kind": "ohlc4"},
-                {"kind": "midpoint"},
-                {"kind": "midprice"},
-                {"kind": "linreg"},
-                {"kind": "median"},
                 {"kind": "stdev"},
                 {"kind": "short_run"},
                 {"kind": "ttm_trend"},
-                {"kind": "accbands"},
-                {"kind": "pdist"},
-                {"kind": "mfi"},
-                {"kind": "obv"},
-                {"kind": "eom"},
-                {"kind": "apo"},
-                {"kind": "pvol"},
-                {"kind": "vp"},
                 {"kind": "cci"},
                 {"kind": "macd", "fast": 8, "slow": 21},
                 {"kind": "sma", "close": "volume", "length": 20, "prefix": "VOLUME"},
@@ -155,27 +138,24 @@ class Enviroment(object):
         if self.acount.order is not None:
             return -1
         else:
-            self.trade_done = False
             self.acount.Place_Order(ask=row["ask"], bid=row["bid"], LorS="short" )
             self.acount.last_order_pl=0
-
-            return 0.000001
+            return 1
 
     def Action_Sell(self, row):
         if self.acount.order is not None:
             return -1
         else:
-            self.trade_done = False
             self.acount.Place_Order(ask=row["ask"], bid=row["bid"], LorS="short" )
             self.acount.last_order_pl = 0
-            return 0.000001
+            return 1
 
     def Action_Hold(self, row):
         if self.acount.order is not None:
             self.acount.order.Calculate_Price_diffrens(ask_price=row["ask"], bid_Price=row["bid"])
             re= self.acount.order.profit_or_loss
             self.acount.equity=self.acount.balance+re
-            return re/1000
+            return re
         else:
             return -0.001
 
@@ -187,28 +167,22 @@ class Enviroment(object):
             self.acount.Close_order(ask=row["ask"] , bid=row["bid"])
             self.acount.order=None
             self.trade_done=True
-            return re
+            return re*10
         else:
             return -1
 
     def Step(self, action, observation):
         self.steps+=1
-        if action == 1:
+        a = np.argmax(action)
+        if a == 0:
             reward = self.Action_Buy(observation)
-        if action == 2:
+        elif a == 1:
             reward = self.Action_Sell(observation)
-        if action == 3:
+        elif a == 2:
+            reward = self.Action_Close(observation)
+        else:
             reward = self.Action_Hold(observation)
-        if action == 0:
-            reward = self.Action_Close(observation)
-        if action == 5:
-            reward = self.Action_Close(observation)
-            reward = self.Action_Sell(observation) + reward
-        if action == 4:
-            reward = self.Action_Close(observation)
-            reward = self.Action_Buy(observation) + reward
-        if reward==0:
-            reward=-0.01
+
         return reward
 
 import numpy as np
@@ -218,39 +192,45 @@ def running(worm_up=1000, data_range=99999):
     env = Enviroment(data_range=data_range)
     data = env.getData()
     state = data.iloc[0]
-    agent = Agent(alpha=0.0001, beta=0.001, input_dims=[len(state)], tau=0.005, env=env, batch_size=100, layer1_size=600,
-                  layer2_size=300, n_actions=6, warmup=worm_up)
+    #agent = Agent(alpha=0.0001, beta=0.001, input_dims=[len(state)], tau=0.005, env=env, batch_size=100, layer1_size=600,layer2_size=300, n_actions=4, warmup=worm_up)
+    agent = Agent(alpha=0.0001, beta=0.001,
+                    input_dims=[len(state)], tau=0.001,
+                    batch_size=64, fc1_dims=400, fc2_dims=300,
+                    n_actions=4)
 
     reward_list=[]
     count=0
     time = 0
     validation_list=[]
     #agent.load_models()
-    print("starter loop")
-    for index, row in data.iterrows():
-        count+=1
-        time += 1
-        action = agent.choose_action(np.float32(state.to_numpy()))
-        a = np.argmax(action)
-        state=env.Update(row=state)
-        reward = env.Step(action=a, observation=state)
-        reward_list.append(reward)
-        newState = env.Update(row=row)
-        agent.remember(state=np.float32(state.to_numpy()), action=action, reward=reward, new_state=np.float32(newState.to_numpy()), done=env.trade_done)
-        agent.learn()
-        state = newState
-        if env.trade_done:
+    while True:
+        print("starter loop")
+        env.acount.balance=10000
+        env.acount.order=None
+        agent.noise.reset()
+        for index, row in data.iterrows():
             count+=1
-            print("Balance : {0} reward : {1}  Profit/loss :{2}  steps {3}".format(env.acount.balance, sum(reward_list), env.acount.last_order_pl, env.steps))
-            env.steps = 0
-            reward_list=[]
-            validation_list.append(sum(reward_list))
-            time=0
-        env.trade_done = False
-    print("Saving ")
-    agent.save_models()
-    print("saving done")
-    return sum(reward_list)
+            time += 1
+            action = agent.choose_action(state.to_numpy())
+            state=env.Update(row=state)
+            reward = env.Step(action=action, observation=state)
+            reward_list.append(reward)
+            newState = env.Update(row=row)
+            agent.remember(state=state.to_numpy(), action=action, reward=reward, state_=newState.to_numpy(), done=env.trade_done)
+            agent.learn()
+            state = newState
+            if env.trade_done:
+                count+=1
+                print("Balance : {0} reward : {1}  Profit/loss :{2}  steps {3}".format(env.acount.balance, sum(reward_list), env.acount.last_order_pl, env.steps))
+                env.steps = 0
+                reward_list=[]
+                validation_list.append(sum(reward_list))
+                time=0
+            env.trade_done = False
+        print("Saving ")
+        agent.save_models()
+        print("saving done")
+
 
 
 
@@ -263,5 +243,5 @@ if __name__ == "__main__":
         print("loop nr ",count)
         wormup= randrange(1000, 10000)
         data_range = randrange(wormup, 99999)
-        validation_rate=running(worm_up=1000, data_range=2000)
+        validation_rate=running(worm_up=0, data_range=99999)
         count+=1
