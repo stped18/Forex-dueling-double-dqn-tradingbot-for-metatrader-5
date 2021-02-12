@@ -1,26 +1,28 @@
 import gym
 import numpy as np
-from ddpg_torch import Agent
-from utils import plot_learning_curve
+from Agent.TD3.td3_torch import Agent
+from Agent.TD3.utils import plot_learning_curve
 
 if __name__ == '__main__':
-    env = gym.make('LunarLanderContinuous-v2')
-    agent = Agent(alpha=0.0001, beta=0.001, 
-                    input_dims=env.observation_space.shape, tau=0.001,
-                    batch_size=64, fc1_dims=400, fc2_dims=300, 
-                    n_actions=env.action_space.shape[0])
-    n_games = 1000
-    filename = 'LunarLander_alpha_' + str(agent.alpha) + '_beta_' + \
-                str(agent.beta) + '_' + str(n_games) + '_games'
-    figure_file = 'plots/' + filename + '.png'
+    env = gym.make('BipedalWalker-v2')
+    #env = gym.make('LunarLanderContinuous-v2')
+    agent = Agent(alpha=0.001, beta=0.001, 
+                input_dims=env.observation_space.shape, tau=0.005,
+                env=env, batch_size=100, layer1_size=400, layer2_size=300,
+                n_actions=env.action_space.shape[0])
+    n_games = 1500
+    filename = 'Walker2d_' + str(n_games) + '_2.png'
+    figure_file = 'plots/' + filename
 
     best_score = env.reward_range[0]
     score_history = []
+
+    #agent.load_models()
+
     for i in range(n_games):
         observation = env.reset()
         done = False
         score = 0
-        agent.noise.reset()
         while not done:
             action = agent.choose_action(observation)
             observation_, reward, done, info = env.step(action)
@@ -35,11 +37,8 @@ if __name__ == '__main__':
             best_score = avg_score
             agent.save_models()
 
-        print('episode ', i, 'score %.1f' % score,
-                'average score %.1f' % avg_score)
+        print('episode ', i, 'score %.2f' % score,
+                'trailing 100 games avg %.3f' % avg_score)
+
     x = [i+1 for i in range(n_games)]
     plot_learning_curve(x, score_history, figure_file)
-
-
-
-

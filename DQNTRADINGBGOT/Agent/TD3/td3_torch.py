@@ -3,17 +3,18 @@ import torch as T
 import torch.nn.functional as F
 import numpy as np
 from Agent.TD3.buffer import ReplayBuffer
-from Agent.TD3.network import ActorNetwork, CriticNetwork
+from Agent.TD3.networks import ActorNetwork, CriticNetwork
+
 
 class Agent():
     def __init__(self, alpha, beta, input_dims, tau, env,
-            gamma=0.99, update_actor_interval=2, warmup=1000,
-            n_actions=2, max_size=1000000, layer1_size=600,
-            layer2_size=300, batch_size=100, noise=0.1):
+                 gamma=0.99, update_actor_interval=2, warmup=1000,
+                 n_actions=2, max_size=1000000, layer1_size=400,
+                 layer2_size=300, batch_size=100, noise=0.1):
         self.gamma = gamma
         self.tau = tau
-        self.max_action = [100]
-        self.min_action = [-100]
+        self.max_action = [1]*n_actions
+        self.min_action = [0]*n_actions
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
         self.batch_size = batch_size
         self.learn_step_cntr = 0
@@ -21,28 +22,26 @@ class Agent():
         self.warmup = warmup
         self.n_actions = n_actions
         self.update_actor_iter = update_actor_interval
-
+        self.device=T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.actor = ActorNetwork(alpha, input_dims, layer1_size,
                                   layer2_size, n_actions=n_actions,
-                                  name='actor')
-
-
+                                  name='actor', device= self.device)
         self.critic_1 = CriticNetwork(beta, input_dims, layer1_size,
                                       layer2_size, n_actions=n_actions,
-                                      name='critic_1')
+                                      name='critic_1', device= self.device)
         self.critic_2 = CriticNetwork(beta, input_dims, layer1_size,
                                       layer2_size, n_actions=n_actions,
-                                      name='critic_2')
+                                      name='critic_2', device= self.device)
 
         self.target_actor = ActorNetwork(alpha, input_dims, layer1_size,
                                          layer2_size, n_actions=n_actions,
-                                         name='target_actor')
+                                         name='target_actor', device= self.device)
         self.target_critic_1 = CriticNetwork(beta, input_dims, layer1_size,
-                                         layer2_size, n_actions=n_actions,
-                                         name='target_critic_1')
+                                             layer2_size, n_actions=n_actions,
+                                             name='target_critic_1', device= self.device)
         self.target_critic_2 = CriticNetwork(beta, input_dims, layer1_size,
-                                         layer2_size, n_actions=n_actions,
-                                         name='target_critic_2')
+                                             layer2_size, n_actions=n_actions,
+                                             name='target_critic_2', device= self.device)
 
         self.noise = noise
         self.update_network_parameters(tau=1)
@@ -51,11 +50,12 @@ class Agent():
         if self.time_step < self.warmup:
             mu = T.tensor(np.random.normal(scale=self.noise, size=(self.n_actions,))).to(self.actor.device)
         else:
-            state = T.tensor(observation, dtype=T.float ).to(self.actor.device)
+            state = T.tensor(observation, dtype=T.float).to(self.actor.device)
             mu = self.actor.forward(state).to(self.actor.device)
         mu_prime = mu + T.tensor(np.random.normal(scale=self.noise),
                                  dtype=T.float).to(self.actor.device)
         mu_prime = T.clamp(mu_prime, self.min_action[0], self.max_action[0])
+
         self.time_step += 1
         return mu_prime.cpu().detach().numpy()
 
@@ -65,18 +65,19 @@ class Agent():
     def learn(self):
         if self.memory.mem_cntr < self.batch_size:
             return
-        state, action, reward, new_state, done = \
-                self.memory.sample_buffer(self.batch_size)
 
-        reward = T.tensor(reward, dtype=T.float ).to(self.critic_1.device)
+        state, action, reward, new_state, done = \
+            self.memory.sample_buffer(self.batch_size)
+
+        reward = T.tensor(reward, dtype=T.float).to(self.critic_1.device)
         done = T.tensor(done).to(self.critic_1.device)
-        state_ = T.tensor(new_state, dtype=T.float ).to(self.critic_1.device)
-        state = T.tensor(state, dtype=T.float ).to(self.critic_1.device)
-        action = T.tensor(action, dtype=T.float ).to(self.critic_1.device)
+        state_ = T.tensor(new_state, dtype=T.float).to(self.critic_1.device)
+        state = T.tensor(state, dtype=T.float).to(self.critic_1.device)
+        action = T.tensor(action, dtype=T.float).to(self.critic_1.device)
 
         target_actions = self.target_actor.forward(state_)
         target_actions = target_actions + \
-                T.clamp(T.tensor(np.random.normal(scale=0.2)), -0.5, 0.5)
+                         T.clamp(T.tensor(np.random.normal(scale=0.2)), -0.5, 0.5)
         # might break if elements of min and max are not all equal
         target_actions = T.clamp(target_actions, self.min_action[0], self.max_action[0])
 
@@ -94,7 +95,7 @@ class Agent():
 
         critic_value_ = T.min(q1_, q2_)
 
-        target = reward + self.gamma*critic_value_
+        target = reward + self.gamma * critic_value_
         target = target.view(self.batch_size, 1)
 
         self.critic_1.optimizer.zero_grad()
@@ -140,16 +141,16 @@ class Agent():
         target_critic_2_state_dict = dict(target_critic_2_params)
 
         for name in critic_1_state_dict:
-            critic_1_state_dict[name] = tau*critic_1_state_dict[name].clone() + \
-                    (1-tau)*target_critic_1_state_dict[name].clone()
+            critic_1_state_dict[name] = tau * critic_1_state_dict[name].clone() + \
+                                        (1 - tau) * target_critic_1_state_dict[name].clone()
 
         for name in critic_2_state_dict:
-            critic_2_state_dict[name] = tau*critic_2_state_dict[name].clone() + \
-                    (1-tau)*target_critic_2_state_dict[name].clone()
+            critic_2_state_dict[name] = tau * critic_2_state_dict[name].clone() + \
+                                        (1 - tau) * target_critic_2_state_dict[name].clone()
 
         for name in actor_state_dict:
-            actor_state_dict[name] = tau*actor_state_dict[name].clone() + \
-                    (1-tau)*target_actor_state_dict[name].clone()
+            actor_state_dict[name] = tau * actor_state_dict[name].clone() + \
+                                     (1 - tau) * target_actor_state_dict[name].clone()
 
         self.target_critic_1.load_state_dict(critic_1_state_dict)
         self.target_critic_2.load_state_dict(critic_2_state_dict)

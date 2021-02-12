@@ -43,8 +43,8 @@ class Agent():
 
         return mu_prime.cpu().detach().numpy()[0]
 
-    def remember(self, state, action, reward, state_, done):
-        self.memory.store_transition(state, action, reward, state_, done)
+    def remember(self, state, action, reward, new_state, done):
+        self.memory.store_transition(state, action, reward, new_state, done)
 
     def save_models(self):
         self.actor.save_checkpoint()
