@@ -10,10 +10,10 @@ class Agent():
     def __init__(self, alpha, beta, input_dims, tau, env,
                  gamma=0.99, update_actor_interval=2, warmup=1000,
                  n_actions=2, max_size=1000000, layer1_size=400,
-                 layer2_size=300, batch_size=100, noise=0.1):
+                 layer2_size=300, batch_size=100, noise=0.1, symbol="EURUSD"):
         self.gamma = gamma
         self.tau = tau
-        self.max_action = [1]*n_actions
+        self.max_action = [100]*n_actions
         self.min_action = [0]*n_actions
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
         self.batch_size = batch_size
@@ -25,23 +25,23 @@ class Agent():
         self.device=T.device('cuda:0' if T.cuda.is_available() else 'cpu')
         self.actor = ActorNetwork(alpha, input_dims, layer1_size,
                                   layer2_size, n_actions=n_actions,
-                                  name='actor', device= self.device)
+                                  name='actor', device= self.device, symbol=symbol)
         self.critic_1 = CriticNetwork(beta, input_dims, layer1_size,
                                       layer2_size, n_actions=n_actions,
-                                      name='critic_1', device= self.device)
+                                      name='critic_1', device= self.device, symbol=symbol)
         self.critic_2 = CriticNetwork(beta, input_dims, layer1_size,
                                       layer2_size, n_actions=n_actions,
-                                      name='critic_2', device= self.device)
+                                      name='critic_2', device= self.device, symbol=symbol)
 
         self.target_actor = ActorNetwork(alpha, input_dims, layer1_size,
                                          layer2_size, n_actions=n_actions,
-                                         name='target_actor', device= self.device)
+                                         name='target_actor', device= self.device, symbol=symbol)
         self.target_critic_1 = CriticNetwork(beta, input_dims, layer1_size,
                                              layer2_size, n_actions=n_actions,
-                                             name='target_critic_1', device= self.device)
+                                             name='target_critic_1', device= self.device, symbol=symbol)
         self.target_critic_2 = CriticNetwork(beta, input_dims, layer1_size,
                                              layer2_size, n_actions=n_actions,
-                                             name='target_critic_2', device= self.device)
+                                             name='target_critic_2', device= self.device, symbol=symbol)
 
         self.noise = noise
         self.update_network_parameters(tau=1)
@@ -55,7 +55,6 @@ class Agent():
         mu_prime = mu + T.tensor(np.random.normal(scale=self.noise),
                                  dtype=T.float).to(self.actor.device)
         mu_prime = T.clamp(mu_prime, self.min_action[0], self.max_action[0])
-
         self.time_step += 1
         return mu_prime.cpu().detach().numpy()
 

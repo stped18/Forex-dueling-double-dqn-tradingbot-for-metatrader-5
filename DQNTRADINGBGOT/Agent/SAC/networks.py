@@ -8,7 +8,7 @@ import numpy as np
 
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions,
-            name, chkpt_dir='G:/SAC'):
+            name, chkpt_dir='E:/Models/SAC'):
         super(CriticNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -46,7 +46,7 @@ class CriticNetwork(nn.Module):
 
 class ActorNetwork(nn.Module):
     def __init__(self, alpha, input_dims, fc1_dims, fc2_dims, max_action,
-            n_actions, name, chkpt_dir='G:/SAC'):
+            n_actions, name, chkpt_dir='E:/Models/SAC'):
         super(ActorNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims

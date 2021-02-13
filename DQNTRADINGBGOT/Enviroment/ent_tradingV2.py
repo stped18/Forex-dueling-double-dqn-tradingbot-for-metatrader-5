@@ -3,10 +3,10 @@ import pandas as pd
 from sklearn import preprocessing
 import pandas_ta as ta
 import numpy as np
-# from Agent.DDPG.ddpg_torch import Agent
-from Agent.TD3.td3_torch import Agent
+from Agent.DDPG.ddpg_torch import Agent
+#from Agent.TD3.td3_torch import Agent
 
-# from Agent.SAC.sac_torch import Agent
+#from Agent.SAC.sac_torch import Agent
 
 ACTION = {"LONG": 1, "SHORT": 0, "CLOSE": 2, "HOLD": 3}
 POSITION = {"LONG": 1, "SHORT": 0, "FLAT": 2}
@@ -35,7 +35,7 @@ class Enviroment(object):
         self.MAX_balance = self.balance * 1.01
         self.MIN_balance = self.balance * 0.75
         self.lot_size = 1000
-        self.riskSize = self.balance * 1.5
+        self.riskSize = self.balance * 2
         self.last_action = 4
         self.start_price = 0
 
@@ -192,6 +192,7 @@ class Enviroment(object):
             self.profit = (observation["ask"] - self.start_price) * self.lot_size
         if self.action == ACTION["SHORT"]:
             self.profit = (self.start_price - observation["bid"]) * self.lot_size
+        self.equity = self.balance + self.profit
         a = np.argmax(action)
         if a == 0:
             self.Action_Buy(observation)
@@ -218,17 +219,16 @@ class Enviroment(object):
             self.trade_done = True
         if self.balance > self.riskSize:
             self.lot_size += 1000
-            self.riskSize = self.balance * 1.5
+            self.riskSize = self.balance * 2
 
 
 def running(worm_up=1000, data_range=2000, loading=True):
     env = Enviroment(data_range=data_range)
     data = env.getData()
     state = data.iloc[0]
-    # agent = Agent(alpha=0.0001, beta=0.001,input_dims=[len(state)], tau=0.001,batch_size=64, fc1_dims=400, fc2_dims=300, n_actions=4)
-    agent = Agent(alpha=0.001, beta=0.001, input_dims=[len(state)], tau=0.005, batch_size=100, layer1_size=400,
-                  layer2_size=300, env=env, n_actions=4, warmup=(worm_up if loading is False else 1000))
-    # agent = Agent(alpha=0.0003, beta=0.0003, reward_scale=2, env_id="env_id", input_dims=[len(state)], tau=0.005,env=env, batch_size=256, layer1_size=256, layer2_size=256,n_actions=4)
+    agent = Agent(alpha=0.0001, beta=0.001,input_dims=[len(state)], tau=0.001,batch_size=64, fc1_dims=800, fc2_dims=300, n_actions=4)
+    #agent = Agent(alpha=0.001, beta=0.001, input_dims=[len(state)], tau=0.005, batch_size=100, layer1_size=800,layer2_size=400, env=env, n_actions=4, warmup=1000, symbol="EURUSD")
+    #agent = Agent(alpha=0.0003, beta=0.0003, reward_scale=2, env_id="env_id", input_dims=[len(state)], tau=0.005,env=env, batch_size=256, layer1_size=256, layer2_size=256,n_actions=4)
 
     reward_list = []
     count = 0
@@ -237,20 +237,21 @@ def running(worm_up=1000, data_range=2000, loading=True):
     validation_list = []
     load = False
     a = 0
+    b=0
     if loading:
         agent.load_models()
-    while a < 10:
+    while a < 5:
         a += 1
-        if loading:
-            agent.load_models()
-        print("starter loop")
-        balance = env.balance
-        env.reset()
+        env = Enviroment(data_range=data_range)
+        data = env.getData()
+        state = data.iloc[0]
+        balance=env.balance
         if load:
             agent.load_models()
             load = False
         for index, row in data.iterrows():
             time += 1
+            b+=1
             action = agent.choose_action(state.to_numpy())
             state = env.Update(row=state)
             reward = env.Step(action=action, observation=state)
@@ -259,22 +260,19 @@ def running(worm_up=1000, data_range=2000, loading=True):
             newState = env.Update(row=row)
             agent.remember(state=state.to_numpy(), action=action, reward=reward, new_state=newState.to_numpy(),
                            done=env.trade_done)
-
+            print("nr {0} Balance: {1} Equntit: {2} Prifit {3} bid: {4} ask: {5} action:{6} reward: {7}".format(b, env.balance, env.equity, env.profit, state["bid"], state["ask"], list(ACTION.keys())[list(ACTION.values()).index(env.action)], reward))
             agent.learn()
             state = newState
             if env.trade_done:
                 count += 1
                 print("Count {4} Balance : {0} reward : {1}  Profit/loss :{2}  steps {3}".format(round(env.balance, 2),
                                                                                                  sum(reward_list),
-                                                                                                 round((
-                                                                                                                   env.balance - balance),
-                                                                                                       2),
+                                                                                                 round(( env.balance - balance),2),
                                                                                                  time, count))
-                time = 0
                 balance = env.balance
                 if env.balance > profit:
-                    agent.save_models()
                     profit = env.balance
+                    agent.save_models()
                     load = True
                 env.steps = 0
                 reward_list = []
@@ -286,7 +284,9 @@ def running(worm_up=1000, data_range=2000, loading=True):
                 agent.remember(state=state.to_numpy(), action=action, reward=reward, new_state=newState.to_numpy(),
                                done=True)
                 return
+
             env.trade_done = False
+        agent.save_models()
 
         env.reset()
 
