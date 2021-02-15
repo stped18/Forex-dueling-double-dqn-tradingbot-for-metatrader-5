@@ -71,10 +71,21 @@ print("wating")
 state = serv.recvmsg()
 agent = Agent(alpha=0.0001, beta=0.001, input_dims=[len(state)], tau=0.001, batch_size=64, fc1_dims=800,fc2_dims=300, n_actions=4)
 env = Env()
-higest_profit=0;
+higest_profit=100;
 
 
 while True:
+    f = open("save_log.txt", "r")
+    validation = f.read()
+    f.close()
+    if validation == "Done":
+        f = open("save_log.txt", "w")
+        f.write("Loading")
+        f.close()
+        agent.load_models()
+        f = open("save_log.txt", "w")
+        f.write("Done")
+        f.close()
     action = agent.choose_action(np.array(state))
     action_Send = env.step(action)
     print("-"*40)
@@ -83,6 +94,8 @@ while True:
     with open("data.csv", "a") as fp:
         wr = csv.writer(fp, dialect='excel')
         wr.writerow(state)
+    fp.close()
+
     if newState[39]>0:
         done = True
     else:
