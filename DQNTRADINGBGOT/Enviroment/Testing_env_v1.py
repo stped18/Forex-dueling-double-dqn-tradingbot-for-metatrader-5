@@ -128,8 +128,7 @@ class Enviroment(object):
         new_row["equity"] = self.acount.equity
         new_row["is_order_placed"] = orderisplaced
         new_row["profit"] = self.acount.profit
-        # min_max_scaler = preprocessing.MinMaxScaler((-1, 1))
-        # np_scaled = min_max_scaler.fit_transform(row)
+
         return new_row
 
     def Action_Buy(self, row):

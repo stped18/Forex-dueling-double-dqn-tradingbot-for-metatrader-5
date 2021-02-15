@@ -47,7 +47,7 @@ class CriticNetwork(nn.Module):
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta,
                                     weight_decay=0.01)
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cuda:1')
+        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
@@ -112,7 +112,7 @@ class ActorNetwork(nn.Module):
         self.mu.bias.data.uniform_(-f3, f3)
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cuda:1')
+        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
 
         self.to(self.device)
 
@@ -130,9 +130,9 @@ class ActorNetwork(nn.Module):
         print('... saving checkpoint ...')
         T.save(self.state_dict(), self.checkpoint_file)
 
-    def load_checkpoint(self, symbol):
+    def load_checkpoint(self):
         print('... loading checkpoint ...')
-        self.load_state_dict(T.load(self.checkpoint_file+symbol))
+        self.load_state_dict(T.load(self.checkpoint_file))
 
     def save_best(self):
         print('... saving best checkpoint ...')
