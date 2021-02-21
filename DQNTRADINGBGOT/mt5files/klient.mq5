@@ -13,7 +13,7 @@
 int socket;
 string lastAction="HOLD";
 double static reward=0;
-int static steps=0;
+double static steps=0;
 double balance = AccountInfoDouble(ACCOUNT_BALANCE);
 double done=0;
 int OnInit()
@@ -42,7 +42,7 @@ socket=SocketCreate();
   if(SocketConnect(socket,"127.0.0.1",9999,10000)) {
    Print("Connected to "," 127.0.0.1",":",9999);
          
-   double data[41];
+   double data[62];
    data[0]=getProfit();
    data[1]=NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID),_Digits);
    data[2]=NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_ASK),_Digits);
@@ -85,14 +85,43 @@ socket=SocketCreate();
    data[36] = CCI(21);
    data[37] = PositionsTotal();
    data[38] = reward;
+   printf("reward "+reward);
    data[39] = done;
    data[40] = steps;
-   reward=0;
+   data[41] = LarryWilliams(21);
+   data[42] = LarryWilliams(14);
+   data[43] = LarryWilliams(7);
+   data[44] = SAR();
+   data[45] = AO();
+   data[46] = BearsPower(21);
+   data[47] = BearsPower(14);
+   data[48] = BearsPower(7);
+   data[49] = BearsPower(21);
+   data[50] = BearsPower(14);
+   data[51] = BearsPower(7);
+   data[52] = RVI(21);
+   data[53] = RVI(14);
+   data[54] = RVI(7);
+   double Adx[2];
+   ADX(21,Adx);
+   data[55] = Adx[0];
+   data[56] = Adx[1];
+   ADX(14,Adx);
+   data[57] = Adx[0];
+   data[58] = Adx[1];
+   ADX(7,Adx);
+   data[59] = Adx[0];
+   data[60] = Adx[1];
+   data[61] = AccountInfoDouble(ACCOUNT_BALANCE);
+   
+   
+   
+   
          
    string tosend;
    for(int i=0;i<ArraySize(data);i++) tosend+=(string)data[i]+" ";       
-   string received = socksend(socket, tosend) ? socketreceive(socket, 1000) : ""; 
-   printf(received);
+   string received = socksend(socket, tosend) ? socketreceive(socket, 10000) : ""; 
+   printf("resived : "+received);
    actionHandler(received); 
    }
    
@@ -138,50 +167,50 @@ void actionHandler(string action){
    steps +=1;
    updateAskBid();
    if(action=="BUY"){
+      if (PositionsTotal()==1){
+         reward=(getProfit()*10)-(steps/10000);
+         Close();
+         
+      }
       if (PositionsTotal()==0){
+         
          steps=0;
-         done=0;
+         done=1;
          Buy(0.01);
          lastAction="BUY";
-         reward=10+getProfit();
+         
+      }else{
+      reward=-100*steps;
       }
-      reward=-100;
-      
-      
    }
-   if (action=="CLOSE"){
-      if (PositionsTotal()>0){
-      done=1;
-      steps=0;
-      lastAction="CLOSE";
-      Close();
-      reward=getProfit()*100;
+   else if(action=="SELL"){
+      if (PositionsTotal()==1){
+         reward=(getProfit()*10)-(steps/10000);
+         Close();
+         
       }
-      reward=-100+getProfit();
-      
-   }
-   if(action=="SELL"){
-   if (PositionsTotal()==0){
+      if (PositionsTotal()==0){
+  
          steps=0;
+         done=1;
+         lastAction="SELL";
          Sell(0.01);
-         done=0;
-         lastAction="BUY";
-         reward=10+getProfit();
-      }
-      reward=-100;
+         
+         }
+       else{reward=-100*steps;}
+      
    }
-   if(action=="HOLD"){
+   else{
+      done=0;
       if (PositionsTotal()>0){
-         reward=getProfit()-(steps/100);
+         reward=getProfit()-(steps/10000);
+         
       }
-   
-   reward=getProfit()-(steps/100);
+      else{
+      reward=getProfit()-(steps);
+      }
    }
    
-   if (AccountInfoDouble(ACCOUNT_BALANCE)>balance){
-      balance=AccountInfoDouble(ACCOUNT_BALANCE);
-      done = 1;
-      reward = reward*2;
-   }
+ 
 
 }

@@ -48,15 +48,15 @@ class socketserver:
 class Env():
     def __init__(self):
         self.steps=0
+        self.sure=0
 
     def step(self, action):
-        a = np.argmax(action)
-        if a == 0:
+        if action[0]>=1 and action[1]<1:
             action_send = "BUY"
-        elif a == 1:
+        elif action[1]>=1 and action[0]<1:
             action_send = "SELL"
-        elif a == 2:
-            action_send = "CLOSE"
+        #elif a == 2:
+            #action_send = "CLOSE"
         else:
             action_send = "HOLD"
 
@@ -69,29 +69,21 @@ import time
 
 print("wating")
 state = serv.recvmsg()
-agent = Agent(alpha=0.0001, beta=0.001, input_dims=[len(state)], tau=0.001, batch_size=64, fc1_dims=800,fc2_dims=300, n_actions=4)
+agent = Agent(alpha=0.0001, beta=0.001, input_dims=[len(state)], tau=0.001, batch_size=64, fc1_dims=800,fc2_dims=300, n_actions=2)
 env = Env()
 higest_profit=100;
-
-
+wins =[]
+loss = []
+#agent.load_models()
+count=0
 while True:
-    f = open("save_log.txt", "r")
-    validation = f.read()
-    f.close()
-    if validation == "Done":
-        f = open("save_log.txt", "w")
-        f.write("Loading")
-        f.close()
-        agent.load_models()
-        f = open("save_log.txt", "w")
-        f.write("Done")
-        f.close()
+    count +=1
     action = agent.choose_action(np.array(state))
     action_Send = env.step(action)
     print("-"*40)
     serv.conn.send(bytes(action_Send, "utf-8"))
     newState = serv.recvmsg()
-    with open("data.csv", "a") as fp:
+    with open("C:/Models/data.csv", "a") as fp:
         wr = csv.writer(fp, dialect='excel')
         wr.writerow(state)
     fp.close()
@@ -100,9 +92,35 @@ while True:
         done = True
     else:
         done=False
-    print("Reward : {0} Action: {1} oldProfit. {2} new Profit {3} ".format(newState[38], action_Send,state[0], newState[0]))
+    if done:
+        if state[0] > 0:
+            wins.append(state[0])
+        else:
+            loss.append(state[0])
+
+        print("Reward : {0} Action: {1}  oldProfit. {2} new Profit {3} wins % {4} ".format(
+        newState[38], action_Send,state[0], newState[0], (len(wins)/(len(loss)+len(wins)))*100))
+    else:
+        print("Reward : {0} Action: {1}  oldProfit. {2} new Profit {3}  ".format(
+            newState[38], action_Send, state[0], newState[0]))
     agent.remember(state=np.array(state), action=action, reward=newState[38], new_state=np.array(newState), done=done)
     agent.learn()
+
+    if done and count>500:
+        agent.save_models()
+        f = open("save_log.txt", "r")
+        validation = f.read()
+        f.close()
+        if validation == "Done":
+            f = open("save_log.txt", "w")
+            f.write("Loading")
+            f.close()
+            agent.load_models()
+            count=0
+            f = open("save_log.txt", "w")
+            f.write("Done")
+            f.close()
+
     if newState[38]>higest_profit :
         agent.save_models()
         higest_profit=newState[38]

@@ -7,7 +7,7 @@ import torch.optim as optim
 
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions, name,
-                 chkpt_dir='E:/Models/DDPG' , symbol="EURUSD"):
+                 chkpt_dir='C:/Models/DDPG' , symbol="EURUSD"):
         super(CriticNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -47,7 +47,7 @@ class CriticNetwork(nn.Module):
 
         self.optimizer = optim.Adam(self.parameters(), lr=beta,
                                     weight_decay=0.01)
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.device = T.device('cpu')
 
         self.to(self.device)
 
@@ -81,7 +81,7 @@ class CriticNetwork(nn.Module):
 
 class ActorNetwork(nn.Module):
     def __init__(self, alpha, input_dims, fc1_dims, fc2_dims, n_actions, name,
-                 chkpt_dir='E:/Models/DDPG' , symbol="EURUSD"):
+                 chkpt_dir='C:/Models/DDPG' , symbol="EURUSD"):
         super(ActorNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -112,7 +112,7 @@ class ActorNetwork(nn.Module):
         self.mu.bias.data.uniform_(-f3, f3)
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
-        self.device = T.device('cuda:0' if T.cuda.is_available() else 'cpu')
+        self.device = T.device('cpu')
 
         self.to(self.device)
 
@@ -123,7 +123,7 @@ class ActorNetwork(nn.Module):
         x = self.fc2(x)
         x = self.bn2(x)
         x = F.relu(x)
-        x = T.relu(self.mu(x))
+        x = T.tanh(self.mu(x))
         return x
 
     def save_checkpoint(self):

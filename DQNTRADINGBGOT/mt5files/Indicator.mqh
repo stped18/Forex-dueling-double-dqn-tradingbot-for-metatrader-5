@@ -125,15 +125,15 @@ void Buy(double lot)
 void Sell(double lot)
   {
   Bid = NormalizeDouble(SymbolInfoDouble(_Symbol, SYMBOL_BID),_Digits);
-   Print("Entert Buy");
+   Print("Entert Sell");
    if(!trade.Sell(lot,NULL,Bid,0,0,NULL))
      {
-      Print("Buy() method failed. Return code=",trade.ResultRetcode(),
+      Print("Sell() method failed. Return code=",trade.ResultRetcode(),
             ". Code description: ",trade.ResultRetcodeDescription());
      }
    else
      {
-      Print("Buy() method executed successfully. Return code=",trade.ResultRetcode(),
+      Print("Sell() method executed successfully. Return code=",trade.ResultRetcode(),
             " (",trade.ResultRetcodeDescription(),")");
      }
   }
@@ -177,7 +177,9 @@ void Sell(double lot)
         {
          if(pos.Symbol()==_Symbol)
          {
+            printf("Closing Position  with profit"+pos.Profit());
            trade.PositionClose(pos.Ticket());
+           
           }
 
         }
@@ -243,3 +245,72 @@ double CCI(int period){
    return priceArray[0];
    
 }
+
+double LarryWilliams(int period){
+   double priceArray[];
+   int IMOM = iWPR(_Symbol, PERIOD_M1,period);
+   CopyBuffer(IMOM,0,0,3,priceArray);
+   return priceArray[0];
+   
+}
+
+double SAR(){
+   double priceArray[];
+   int IMOM = iSAR(_Symbol,PERIOD_CURRENT,0.02,0.2);
+   CopyBuffer(IMOM,0,0,3,priceArray);
+   return priceArray[0];
+   
+}
+double AO(){
+   double priceArray[];
+   int IMOM = iAO(_Symbol,PERIOD_CURRENT);
+   CopyBuffer(IMOM,0,0,3,priceArray);
+   return priceArray[0];
+   
+}
+double BearsPower(int period){
+   double priceArray[];
+   int IMOM = iBearsPower(_Symbol,PERIOD_CURRENT,period);
+   CopyBuffer(IMOM,0,0,3,priceArray);
+   return priceArray[0];
+   
+}
+double BullPower(int period){
+   double priceArray[];
+   int IMOM = iBullsPower(_Symbol,PERIOD_CURRENT,period);
+   CopyBuffer(IMOM,0,0,3,priceArray);
+   return priceArray[0];
+   
+}
+double RVI(int period){
+   double priceArray[];
+   int IMOM = iRVI(_Symbol,PERIOD_CURRENT,period);
+   CopyBuffer(IMOM,0,0,3,priceArray);
+   return priceArray[0];
+   
+}
+void ADX(int timePeriod, double& data[]){
+   double MiddelBrandArray[];
+   double UpperBandArray[];
+   
+   
+   ArraySetAsSeries(MiddelBrandArray,true);
+   ArraySetAsSeries(UpperBandArray,true);
+   
+   
+   int Definition = iADX(_Symbol,PERIOD_CURRENT,timePeriod);
+  
+   
+   CopyBuffer(Definition,0,0,3,MiddelBrandArray);
+   CopyBuffer(Definition,1,0,3,UpperBandArray);
+   
+   
+   double MiddelBrandValue=MiddelBrandArray[0];
+   double UpperBrandValue = UpperBandArray[0];
+   
+   
+   data[0]=MiddelBrandArray[0];
+   data[1]=UpperBandArray[0];
+   
+   
+ }

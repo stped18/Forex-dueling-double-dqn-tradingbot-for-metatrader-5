@@ -1,10 +1,15 @@
 import csv
 #from Agent.DDPG.ddpg_torch import Agent
 import numpy as np
+import tensorflow as tf
 from Agent.Rainbow.memories import PrioritizedNStepMemory
 from Agent.Rainbow.networks import NoisyDuelingNetwork
 from Agent.Rainbow.rainbow_agent import DQNAgent
+config=tf.ConfigProto(
+    device_count = {'cpu'}
 
+)
+sess=tf.Session(config=config)
 
 
 class Enviroment():

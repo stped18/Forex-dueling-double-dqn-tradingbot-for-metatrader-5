@@ -8,8 +8,8 @@ from Agent.TD3.networks import ActorNetwork, CriticNetwork
 
 class Agent():
     def __init__(self, alpha, beta, input_dims, tau, env,
-                 gamma=0.99, update_actor_interval=2, warmup=1000,
-                 n_actions=2, max_size=1000000, layer1_size=400,
+                 gamma=0.99, update_actor_interval=2, warmup=99999,
+                 n_actions=2, max_size=100000000, layer1_size=400,
                  layer2_size=300, batch_size=100, noise=0.1, symbol="EURUSD"):
         self.gamma = gamma
         self.tau = tau

@@ -10,7 +10,7 @@ import numpy as np
 
 class CriticNetwork(nn.Module):
     def __init__(self, beta, input_dims, fc1_dims, fc2_dims, n_actions,
-            name, chkpt_dir='E:/Models/TD3', device=T.device('cuda:0' if T.cuda.is_available() else 'cpu'), symbol="EURUSD"):
+            name, chkpt_dir='C:/Models/TD3', device=T.device('cpu'), symbol="EURUSD"):
         super(CriticNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -49,7 +49,7 @@ class CriticNetwork(nn.Module):
 
 class ActorNetwork(nn.Module):
     def __init__(self, alpha, input_dims, fc1_dims, fc2_dims,
-            n_actions, name, chkpt_dir='E:/Models/TD3', device=T.device('cuda:0' if T.cuda.is_available() else 'cpu'), symbol="EURUSD"):
+            n_actions, name, chkpt_dir='C:/Models/TD3', device=T.device('cpu'), symbol="EURUSD"):
         super(ActorNetwork, self).__init__()
         self.input_dims = input_dims
         self.fc1_dims = fc1_dims
@@ -73,8 +73,6 @@ class ActorNetwork(nn.Module):
         prob = F.relu(prob)
 
         prob = T.tanh(self.mu(prob)) # if action is > +/- 1 then multiply by max action
-
-
         return prob
 
     def save_checkpoint(self):
